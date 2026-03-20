@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block page_title %}API 接口使用介绍 (API Documentation){% endblock %}
+
+{% block content %}
+<div class="docs-container" style="display: grid; grid-template-columns: 240px 1fr; gap: 2rem; align-items: start;">
+    <!-- Sidebar Navigation -->
+    <aside class="docs-sidebar card" style="position: sticky; top: 1rem; padding: 1rem;">
+        <h4
+            style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+            文档目录</h4>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            <li style="margin-bottom: 0.5rem;"><a href="#auth" class="doc-nav-link">认证与鉴权</a></li>
+            <li style="margin-bottom: 0.5rem;"><a href="#webhook" class="doc-nav-link">告警接入 (Webhook)</a></li>
+            <li style="margin-bottom: 0.5rem;"><a href="#agents" class="doc-nav-link">Agent 交互接口</a></li>
+            <li style="margin-bottom: 0.5rem;"><a href="#management" class="doc-nav-link">系统管理接口</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="docs-main">
+        <!-- Authentication Section -->
+        <section id="auth" class="card" style="margin-bottom: 2rem;">
+            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <i class="fas fa-lock" style="margin-right: 0.5rem; color: var(--primary-color);"></i> 1. 认证与鉴权
+            </h3>
+            <p>TwinSentry 支持两种认证方式，分别用于 Web 管理和自动化 Agent：</p>
+
+            <div style="margin-top: 1.5rem;">
+                <h4 style="color: var(--primary-color); font-size: 1rem;">1.1 自动化 Agent 认证</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">TwinSentry 区分任务阶段，请根据 Agent 类型使用对应的 Key：</p>
+
+                <div style="margin: 1rem 0;">
+                    <p style="font-size: 0.8rem; font-weight: 600;">分析智能体 (Analysis Agent):</p>
+                    <code
+                        style="display: block; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem;">
+                        X-Agent-Key: <span class="analysis-key">YOUR_ANALYSIS_KEY</span>
+                    </code>
+                </div>
+
+                <div style="margin: 1rem 0;">
+                    <p style="font-size: 0.8rem; font-weight: 600;">处置智能体 (Disposition Agent):</p>
+                    <code
+                        style="display: block; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem;">
+                        X-Agent-Key: <span class="disposition-key">YOUR_DISPOSITION_KEY</span>
+                    </code>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <h4 style="color: var(--primary-color); font-size: 1rem;">1.2 Web 用户 Bearer 认证</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">用于管理端接口（如获取告警列表）。获取登录 Token 后在 Header 中使用：</p>
+                <code
+                    style="display: block; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+                    Authorization: Bearer &lt;your_token&gt;
+                </code>
+            </div>
+        </section>
+
+        <!-- Webhook Section -->
+        <section id="webhook" class="card" style="margin-bottom: 2rem;">
+            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <i class="fas fa-broadcast-tower" style="margin-right: 0.5rem; color: #10b981;"></i> 2. 告警接入 (Webhook)
+            </h3>
+            <p>通用告警接收端。您可以从 SIEM (Splunk, ELK) 或 EDR 发送 POST 请求将告警推送到 TwinSentry。</p>
+
+            <div class="api-endpoint"
+                style="background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10b981; padding: 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0;">
+                <span style="font-weight: 700; color: #10b981;">POST</span>
+                <span class="server-url">http://your-server</span>/api/webhook/receiver
+            </div>
+
+            <h5>请求体 (JSON):</h5>
+            <div style="position: relative;">
+                <pre class="code-block" id="webhook-example">{
+  "title": "[严重] 恶意进程执行告警",
+  "text": "主机名: WS-01\n进程名: mimikatz.exe\n用户: SYSTEM\n路径: C:\\Temp\\"
+}</pre>
+                <button class="copy-btn" onclick="copyCode('webhook-example', event)">复制</button>
+            </div>
+        </section>
+
+        <!-- Agent API Section -->
+        <section id="agents" class="card" style="margin-bottom: 2rem;">
+            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <i class="fas fa-robot" style="margin-right: 0.5rem; color: #6366f1;"></i> 3. Agent 交互接口
+            </h3>
+
+            <div style="margin-bottom: 2rem;">
+                <h4 style="font-size: 1rem;">3.1 拉取待分析任务 (Analysis)</h4>
+                <div class="api-endpoint"
+                    style="background: rgba(99, 102, 241, 0.05); border-left: 4px solid #6366f1; padding: 1rem; margin: 0.5rem 0;">
+                    <span style="font-weight: 700; color: #6366f1;">GET</span> /analysis/fetch
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">从队列中原子的获取一条 PENDING 状态的告警。</p>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h4 style="font-size: 1rem;">3.2 提交分析结果 (Analysis)</h4>
+                <div class="api-endpoint"
+                    style="background: rgba(99, 102, 241, 0.05); border-left: 4px solid #6366f1; padding: 1rem; margin: 0.5rem 0;">
+                    <span style="font-weight: 700; color: #6366f1;">POST</span> /analysis/submit
+                </div>
+                <div style="position: relative;">
+                    <pre class="code-block" id="submit-example">{
+  "id": 123,
+  "result": "经研判，该告警为真实攻击，建议封禁恶意源 IP。"
+}</pre>
+                    <button class="copy-btn" onclick="copyCode('submit-example', event)">复制</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h4 style="font-size: 1rem;">3.3 拉取待处置任务 (Process)</h4>
+                <div class="api-endpoint"
+                    style="background: rgba(99, 102, 241, 0.05); border-left: 4px solid #6366f1; padding: 1rem; margin: 0.5rem 0;">
+                    <span style="font-weight: 700; color: #6366f1;">GET</span> /disposition/fetch
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">从队列中拉取一条已完成分析且待处置的告警。</p>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h4 style="font-size: 1rem;">3.4 提交处置结果 (Process)</h4>
+                <div class="api-endpoint"
+                    style="background: rgba(99, 102, 241, 0.05); border-left: 4px solid #6366f1; padding: 1rem; margin: 0.5rem 0;">
+                    <span style="font-weight: 700; color: #6366f1;">POST</span> /disposition/submit
+                </div>
+                <div style="position: relative;">
+                    <pre class="code-block" id="process-example">{
+  "id": 123,
+  "result": "已根据分析建议封禁源IP: 1.1.1.1"
+}</pre>
+                    <button class="copy-btn" onclick="copyCode('process-example', event)">复制</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Management Section -->
+        <section id="management" class="card">
+            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <i class="fas fa-tasks" style="margin-right: 0.5rem; color: #f59e0b;"></i> 4. 系统管理接口
+            </h3>
+            <p>用于第三方看板或管理系统集成。</p>
+
+            <table class="table" style="width: 100%; margin-top: 1rem;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">路径</th>
+                        <th style="text-align: left;">方法</th>
+                        <th style="text-align: left;">描述</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/api/alerts</td>
+                        <td><span style="color: #6366f1;">GET</span></td>
+                        <td>获取所有活动告警列表</td>
+                    </tr>
+                    <tr>
+                        <td>/api/stats/dashboard</td>
+                        <td><span style="color: #6366f1;">GET</span></td>
+                        <td>获取仪表盘统计数据 (饼图/趋势)</td>
+                    </tr>
+                    <tr>
+                        <td>/api/alerts/&lt;id&gt;</td>
+                        <td><span style="color: #ef4444;">DELETE</span></td>
+                        <td>逻辑删除指定告警</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+</div>
+
+<style>
+    .doc-nav-link {
+        display: block;
+        padding: 0.5rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        border-radius: 4px;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+
+    .doc-nav-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-color);
+        padding-left: 0.75rem;
+    }
+
+    .api-endpoint {
+        font-family: 'Consolas', monospace;
+        font-size: 0.9rem;
+    }
+
+    .code-block {
+        background: #0f172a;
+        padding: 1.25rem;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: #e2e8f0;
+        overflow-x: auto;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        margin: 1rem 0;
+    }
+
+    .copy-btn {
+        position: absolute;
+        top: 1.5rem;
+        right: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        cursor: pointer;
+    }
+
+    .copy-btn:hover {
+        background: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadConfig() {
+        const res = await apiRequest('/api/skills/config');
+        if (res && res.data) {
+            const config = res.data;
+            document.querySelectorAll('.server-url').forEach(el => el.textContent = config.server_url);
+            document.querySelectorAll('.analysis-key').forEach(el => el.textContent = config.analysis_agent_key);
+            document.querySelectorAll('.disposition-key').forEach(el => el.textContent = config.disposition_agent_key);
+        }
+    }
+
+    function copyCode(id, ev) {
+        const text = document.getElementById(id).innerText;
+        const btn = ev ? ev.target : event.target;
+
+        const doSuccess = () => {
+            const originalText = btn.innerText;
+            btn.innerText = '已复制';
+            setTimeout(() => btn.innerText = originalText, 2000);
+            showFeedback('代码已复制到剪贴板');
+        };
+
+        copyToClipboard(text, doSuccess);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadConfig);
+</script>
+{% endblock %}

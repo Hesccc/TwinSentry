@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block page_title %}个人中心{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <div class="card" style="text-align: center;">
+        <h3>账户设置</h3>
+        <div style="position: relative; width: 120px; height: 120px; margin: 2rem auto;">
+            <img id="profile-avatar" src="" alt="Avatar"
+                style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #334155; border: 4px solid var(--primary-color);">
+            <label for="avatar-upload"
+                style="position: absolute; bottom: 0; right: 0; background: var(--primary-color); padding: 8px; border-radius: 50%; cursor: pointer;">
+                <i class="fas fa-camera"></i>
+            </label>
+            <input type="file" id="avatar-upload" style="display: none;" accept="image/png, image/jpeg">
+        </div>
+        <p id="profile-username" style="font-size: 1.2rem; font-weight: 600;">Admin</p>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">(账户名称：<span id="display-name">admin</span>)</p>
+    </div>
+
+    <div class="card">
+        <h3>修改基本信息</h3>
+        <form id="profile-form" style="margin-top: 1.5rem;">
+            <div class="form-group">
+                <label>账户名称</label>
+                <input type="text" id="edit-username" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label>电子邮箱</label>
+                <input type="email" id="edit-email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label>新密码 (留空不修改)</label>
+                <input type="password" id="edit-password" class="form-input">
+            </div>
+            <button type="submit" class="btn">保存修改</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Agent 认证 Key</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">用于开放式 API 和 智能体 (Skills) 调用</p>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">分析智能体
+                (Analysis Agent Key)</label>
+            <div
+                style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                <code id="analysis-key" style="color: var(--accent-blue);">Loading...</code>
+                <button class="btn" style="width: auto; padding: 5px 10px;"
+                    onclick="copyKey('analysis-key')">复制</button>
+            </div>
+        </div>
+
+        <div>
+            <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">处置智能体
+                (Disposition Agent Key)</label>
+            <div
+                style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                <code id="disposition-key" style="color: var(--accent-blue);">Loading...</code>
+                <button class="btn" style="width: auto; padding: 5px 10px;"
+                    onclick="copyKey('disposition-key')">复制</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadProfile() {
+        const user = await apiRequest('/api/auth/profile');
+        if (typeof syncUser === 'function') syncUser(user);
+
+        document.getElementById('profile-username').textContent = user.username;
+        document.getElementById('display-name').textContent = user.username;
+        document.getElementById('edit-username').value = user.username;
+        document.getElementById('edit-email').value = user.email;
+        if (user.avatar) {
+            document.getElementById('profile-avatar').src = user.avatar + '?t=' + new Date().getTime();
+        }
+
+        const res = await apiRequest('/config/key');
+        if (res && res.data) {
+            document.getElementById('analysis-key').textContent = res.data.analysis_agent_key;
+            document.getElementById('disposition-key').textContent = res.data.disposition_agent_key;
+        }
+    }
+
+    document.getElementById('profile-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = {
+            username: e.target['edit-username'].value,
+            email: e.target['edit-email'].value
+        };
+        if (e.target['edit-password'].value) data.password = e.target['edit-password'].value;
+
+        const res = await apiRequest('/api/auth/profile', 'PUT', data);
+        if (res.message) {
+            showFeedback('资料已更新');
+            loadProfile();
+        }
+    };
+
+    document.getElementById('avatar-upload').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file && file.size <= 500 * 1024) {
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            const token = localStorage.getItem('ts_token');
+            const res = await fetch('/api/auth/avatar', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.avatar_url) {
+                showFeedback('头像上传成功');
+                loadProfile();
+            }
+        } else {
+            alert('文件大小超出 500KB 限制');
+        }
+    };
+
+    function copyKey(elementId) {
+        const key = document.getElementById(elementId).textContent;
+        copyToClipboard(key, () => {
+            showFeedback('Key 已复制到剪贴板');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadProfile);
+</script>
+{% endblock %}

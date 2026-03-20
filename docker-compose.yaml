@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=twinsentry
+      - POSTGRES_DB=twinsentry
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    environment:
+      - DATABASE_URL=postgresql://postgres:twinsentry@db:5432/twinsentry
+      - SECRET_KEY=twinsentry-dev-secret-key
+      - JWT_SECRET_KEY=jwt-dev-secret-key
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:

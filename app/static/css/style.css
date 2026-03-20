@@ -1,0 +1,334 @@
+:root {
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --bg-dark: #0f172a;
+    --bg-card: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --accent-blue: #38bdf8;
+    --status-pending: #fbbf24;
+    --status-analyzing: #60a5fa;
+    --status-analyzed: #a78bfa;
+    --status-processing: #f472b6;
+    --status-processed: #34d399;
+    --danger: #ef4444;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    overflow-x: hidden;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border-color);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 3rem;
+    color: var(--primary-color);
+}
+
+.nav-links {
+    list-style: none;
+    flex-grow: 1;
+}
+
+.nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    text-decoration: none;
+    color: var(--text-muted);
+    border-radius: 0.5rem;
+    transition: all 0.3s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--text-main);
+}
+
+.nav-link i {
+    margin-right: 0.75rem;
+    width: 20px;
+}
+
+/* Main Content Area */
+.main-wrapper {
+    margin-left: 260px;
+    padding: 2rem;
+    min-height: 100vh;
+}
+
+/* Glassmorphism Cards */
+.card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Login Page Specific */
+.login-container {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-bg-blob {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: var(--primary-color);
+    filter: blur(100px);
+    opacity: 0.2;
+    border-radius: 50%;
+}
+
+.login-card {
+    width: 400px;
+    padding: 2.5rem;
+    text-align: center;
+    z-index: 10;
+}
+
+.login-card h1 {
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    color: white;
+    outline: none;
+    transition: border 0.3s;
+}
+
+.form-input:focus {
+    border-color: var(--primary-color);
+}
+
+.btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn:hover {
+    background: var(--primary-hover);
+}
+
+/* Tables */
+.table-container {
+    margin-top: 2rem;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+}
+
+.badge-pending {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+}
+
+.badge-analyzing {
+    background: rgba(96, 165, 250, 0.2);
+    color: #60a5fa;
+}
+
+.badge-analyzed {
+    background: rgba(167, 139, 250, 0.2);
+    color: #a78bfa;
+}
+
+.badge-processing {
+    background: rgba(244, 114, 182, 0.2);
+    color: #f472b6;
+}
+
+.badge-processed {
+    background: rgba(52, 211, 153, 0.2);
+    color: #34d399;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.chart-container {
+    height: 300px;
+}
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    width: 90%;
+    max-width: 800px;
+    border-radius: 1rem;
+    padding: 2rem;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Stat Cards */
+.stat-cards-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    position: relative;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    color: white;
+    transition: transform 0.3s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card-title {
+    font-size: 0.875rem;
+    opacity: 0.8;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.stat-card-icon {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    font-size: 2.5rem;
+    opacity: 0.2;
+}
+
+.card-blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.card-gold {
+    background: linear-gradient(135deg, #eab308 0%, #a16207 100%);
+}
+
+.card-red {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+}
+
+.card-navy {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+}
+
+.card-green {
+    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+}

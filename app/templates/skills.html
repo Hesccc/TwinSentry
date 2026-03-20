@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block page_title %}TwinSentry Skill 中心 (Skills Center){% endblock %}
+
+{% block content %}
+<div class="skills-container">
+    <div class="card"
+        style="margin-bottom: 2rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(15, 23, 42, 0) 100%); border-left: 4px solid var(--primary-color);">
+        <h3>🚀 集成您的 AI Agent</h3>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">
+            使用以下预先配置好的全量技能包（Skills），您可以将 TwinSentry 快速集成到 OpenClaw、LangChain 或 Dify 等 AI 框架中。软件包内含 Python 驱动脚本与详细文档。
+        </p>
+        <div style="margin-top: 1.5rem;">
+            <button class="btn" onclick="downloadSkill()">
+                <i class="fas fa-file-archive" style="margin-right: 0.5rem;"></i> 下载完整 Skills 软件包 (.zip)
+            </button>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <!-- Analysis Agent Card -->
+        <div class="card">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                <div
+                    style="width: 40px; height: 40px; border-radius: 8px; background: rgba(34, 197, 94, 0.1); color: #22c55e; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-microscope" style="font-size: 1.2rem;"></i>
+                </div>
+                <h4 style="margin: 0;">分析 Agent (Analysis)</h4>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                核心逻辑：获取待分析告警 -> 调用 LLM 进行智能判断 -> 提交分析结论。
+            </p>
+            <div style="position: relative;">
+                <pre class="code-block" id="analysis-code">
+import requests
+
+SERVER = "<span class="server-url">加载中...</span>"
+KEY = "<span class="analysis-key">加载中...</span>"
+
+def analyze():
+    # 获取任务
+    res = requests.get(f"{SERVER}/analysis/fetch", 
+                       headers={"X-Agent-Key": KEY})
+    task = res.json()
+    if task:
+        # TODO: 调用您的分析模型
+        print(f"分析告警: {task['title']}")
+        requests.post(f"{SERVER}/analysis/submit", 
+                      headers={"X-Agent-Key": KEY},
+                      json={"id": task['id'], "result": "分析通过"})
+                </pre>
+                <button class="copy-btn" onclick="copyCode('analysis-code', event)">复制</button>
+            </div>
+        </div>
+
+        <!-- Disposition Agent Card -->
+        <div class="card">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                <div
+                    style="width: 40px; height: 40px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-gavel" style="font-size: 1.2rem;"></i>
+                </div>
+                <h4 style="margin: 0;">处置 Agent (Disposition)</h4>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                核心逻辑：获取分析结论 -> 执行封禁/隔离/工单操作 -> 提交处置结果。
+            </p>
+            <div style="position: relative;">
+                <pre class="code-block" id="disposition-code">
+import requests
+
+SERVER = "<span class="server-url">加载中...</span>"
+KEY = "<span class="disposition-key">加载中...</span>"
+
+def dispose():
+    # 获取任务
+    res = requests.get(f"{SERVER}/disposition/fetch", 
+                       headers={"X-Agent-Key": KEY})
+    task = res.json()
+    if task:
+        # TODO: 执行安全工具操作
+        print(f"处置告警: {task['title']}")
+        requests.post(f"{SERVER}/disposition/submit", 
+                      headers={"X-Agent-Key": KEY},
+                      json={"id": task['id'], "result": "已封禁源IP"})
+                </pre>
+                <button class="copy-btn" onclick="copyCode('disposition-code', event)">复制</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h4>📚 更多资源</h4>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+            <div class="resource-card" onclick="showResource('analysis_agent_skill.py')">
+                <i class="fab fa-python" style="font-size: 2rem; color: #3776ab; margin-bottom: 0.5rem;"></i>
+                <div style="font-weight: 500;">Python SDK</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">核心驱动类</div>
+            </div>
+            <div class="resource-card" onclick="showResource('langchain_wrapper.py')">
+                <i class="fas fa-project-diagram" style="font-size: 2rem; color: #6366f1; margin-bottom: 0.5rem;"></i>
+                <div style="font-weight: 500;">LangChain Wrapper</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">BaseTool 封装</div>
+            </div>
+            <div class="resource-card" onclick="showResource('dify_tool.yaml')">
+                <i class="fas fa-layer-group" style="font-size: 2rem; color: #10b981; margin-bottom: 0.5rem;"></i>
+                <div style="font-weight: 500;">Dify Plugin</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">OpenAPI 配置</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .resource-card {
+        text-align: center;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .resource-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--primary-color);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .code-block {
+        background: #0f172a;
+        padding: 1.5rem;
+        border-radius: 8px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: #e2e8f0;
+        overflow-x: auto;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .copy-btn {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        padding: 4px 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let skillPreviews = {};
+
+    async function loadSkillsConfig() {
+        const res = await apiRequest('/api/skills/config');
+        if (res && res.data) {
+            const config = res.data;
+            document.querySelectorAll('.server-url').forEach(el => el.textContent = config.server_url);
+            document.querySelectorAll('.analysis-key').forEach(el => el.textContent = config.analysis_agent_key);
+            document.querySelectorAll('.disposition-key').forEach(el => el.textContent = config.disposition_agent_key);
+            skillPreviews = config.previews;
+        }
+    }
+
+    function showResource(name) {
+        const content = skillPreviews[name];
+        if (!content) return;
+
+        const bodyHtml = `
+            <div style="position: relative;">
+                <pre class="code-block" id="modal-code-preview" style="max-height: 60vh; margin: 0;">${content}</pre>
+                <button class="copy-btn" onclick="copyCode('modal-code-preview', event)" style="top: 0.5rem; right: 0.5rem;">复制</button>
+            </div>
+        `;
+
+        document.getElementById('modal-title').innerText = `资源预览: ${name}`;
+        document.getElementById('modal-body').innerHTML = bodyHtml;
+        document.getElementById('modal-container').classList.add('active');
+    }
+
+    function downloadSkill() {
+        window.location.href = '/api/skills/download';
+    }
+
+    function copyCode(id, ev) {
+        const text = document.getElementById(id).innerText;
+        const btn = ev ? ev.target : event.target;
+
+        const doSuccess = () => {
+            const originalText = btn.innerText;
+            btn.innerText = '已复制';
+            setTimeout(() => btn.innerText = originalText, 2000);
+            showFeedback('代码已复制到剪贴板');
+        };
+
+        copyToClipboard(text, doSuccess);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSkillsConfig);
+</script>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block page_title %}告警概览{% endblock %}
+
+{% block content %}
+<div class="stat-cards-container" style="grid-template-columns: repeat(6, 1fr);">
+    <div class="stat-card card-navy">
+        <div class="stat-card-title">采集总数</div>
+        <div class="stat-card-value" id="stat-raw">0</div>
+        <i class="fas fa-shield-alt stat-card-icon"></i>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);">
+        <div class="stat-card-title">去重拦截</div>
+        <div class="stat-card-value" id="stat-dedup">0</div>
+        <i class="fas fa-filter stat-card-icon"></i>
+    </div>
+    <div class="stat-card card-gold">
+        <div class="stat-card-title">待分析</div>
+        <div class="stat-card-value" id="stat-pending">0</div>
+        <i class="fas fa-exclamation-circle stat-card-icon"></i>
+    </div>
+    <div class="stat-card card-red">
+        <div class="stat-card-title">严重告警</div>
+        <div class="stat-card-value" id="stat-active">0</div>
+        <i class="fas fa-times-circle stat-card-icon"></i>
+    </div>
+    <div class="stat-card card-blue">
+        <div class="stat-card-title">处理中</div>
+        <div class="stat-card-value" id="stat-processing">0</div>
+        <i class="fas fa-sync stat-card-icon"></i>
+    </div>
+    <div class="stat-card card-green">
+        <div class="stat-card-title">已处置</div>
+        <div class="stat-card-value" id="stat-processed">0</div>
+        <i class="fas fa-check-circle stat-card-icon"></i>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 1.5rem;">
+    <div class="card">
+        <h3>告警趋势综合分析 (24h)</h3>
+        <div class="chart-container" style="height: 350px;">
+            <canvas id="chart-combined"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <h3>状态分布</h3>
+        <div class="chart-container" style="height: 350px;">
+            <canvas id="chart-status"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+        <h3>高频告警 Top 5</h3>
+        <div class="chart-container" style="height: 300px;">
+            <canvas id="chart-top-titles"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 style="margin: 0;">最近活动</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">实时更新</span>
+        </div>
+        <div id="activity-feed" style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Activity items will load here -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let charts = {};
+
+    async function refreshStats() {
+        const stats = await apiRequest('/api/stats/dashboard');
+        if (!stats) return;
+
+        // Update Stat Cards
+        document.getElementById('stat-raw').textContent = stats.counts.total_raw;
+        document.getElementById('stat-pending').textContent = stats.counts.total_pending;
+        document.getElementById('stat-active').textContent = stats.counts.total_active;
+        document.getElementById('stat-processing').textContent = stats.counts.total_processing;
+        document.getElementById('stat-processed').textContent = stats.counts.total_processed;
+        document.getElementById('stat-dedup').textContent = stats.dedup_stats.deduplicated;
+
+        // Charts
+        renderPieChart('chart-status', stats.status_distribution);
+        renderTopTitlesChart('chart-top-titles', stats.top_titles);
+
+        const trendData = [
+            { label: '数据采集 (含删除)', color: '#94a3b8', data: stats.raw_trends },
+            { label: '告警生成 (实时)', color: '#6366f1', data: stats.active_trends },
+            { label: '告警处置 (已完成)', color: '#10b981', data: stats.processed_trends }
+        ];
+        renderCombinedChart('chart-combined', trendData);
+
+        // Activity Feed
+        renderActivityFeed(stats.recent_alerts);
+    }
+
+    function renderPieChart(id, data) {
+        if (charts[id]) charts[id].destroy();
+        const ctx = document.getElementById(id).getContext('2d');
+        charts[id] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: ['#fbbf24', '#60a5fa', '#a78bfa', '#f472b6', '#34d399'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 20 } } }
+            }
+        });
+    }
+
+    function renderTopTitlesChart(id, data) {
+        if (charts[id]) charts[id].destroy();
+        const ctx = document.getElementById(id).getContext('2d');
+        charts[id] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.title.length > 20 ? d.title.substring(0, 17) + '...' : d.title),
+                datasets: [{
+                    label: '出现次数',
+                    data: data.map(d => d.count),
+                    backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                    borderColor: '#6366f1',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function renderActivityFeed(alerts) {
+        const feed = document.getElementById('activity-feed');
+        feed.innerHTML = alerts.map(a => `
+            <div style="display: flex; align-items: center; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${getStatusColor(a.status)};"></div>
+                <div style="flex: 1;">
+                    <div style="font-size: 0.85rem; font-weight: 500;">${a.title}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${a.status}</div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${new Date(a.time).toLocaleTimeString()}</div>
+            </div>
+        `).join('');
+    }
+
+    function getStatusColor(status) {
+        const colors = {
+            '待分析': '#fbbf24',
+            '分析中': '#60a5fa',
+            '已分析': '#a78bfa',
+            '处置中': '#f472b6',
+            '已处置': '#34d399'
+        };
+        return colors[status] || '#94a3b8';
+    }
+
+    function renderCombinedChart(id, datasetsInfo) {
+        if (charts[id]) charts[id].destroy();
+        const ctx = document.getElementById(id).getContext('2d');
+        const now = new Date();
+        const last24hLabels = [];
+        const timeSlots = [];
+        for (let i = 23; i >= 0; i--) {
+            const h = new Date(now.getTime() - i * 60 * 60 * 1000);
+            h.setMinutes(0, 0, 0);
+            timeSlots.push({ isoPrefix: h.toISOString().slice(0, 13).replace('T', ' '), label: h.getHours() + ":00" });
+            last24hLabels.push(h.getHours() + ":00");
+        }
+
+        const formattedDatasets = datasetsInfo.map(info => ({
+            label: info.label,
+            data: timeSlots.map(slot => {
+                const found = info.data.find(d => d.hour.startsWith(slot.isoPrefix));
+                return found ? found.count : 0;
+            }),
+            borderColor: info.color,
+            backgroundColor: info.color + '22',
+            tension: 0.4,
+            fill: true,
+            pointRadius: 0
+        }));
+
+        charts[id] = new Chart(ctx, {
+            type: 'line',
+            data: { labels: last24hLabels, datasets: formattedDatasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }, grid: { display: false } }
+                },
+                plugins: { legend: { position: 'top', labels: { color: '#94a3b8', boxWidth: 10 } } }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', refreshStats);
+    setInterval(refreshStats, 30000);
+</script>
+{% endblock %}

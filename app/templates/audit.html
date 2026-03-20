@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block page_title %}审计监控{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid" style="grid-template-columns: 2fr 1fr; margin-top: 0;">
+    <div class="card">
+        <h3>审计趋势分析</h3>
+        <div class="chart-container" style="height: 300px;">
+            <canvas id="chart-audit"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Agent API 登录失败统计 (24h)</h3>
+        <div style="display: grid; gap: 0.75rem; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; background: rgba(239, 68, 68, 0.08);">
+                <span style="color: var(--text-muted);">总失败次数</span>
+                <strong id="agent-auth-fail-total" style="color: #ef4444;">0</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;">
+                <span style="color: var(--text-muted);">分析智能体</span>
+                <strong id="analysis-auth-fail-count">0</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;">
+                <span style="color: var(--text-muted);">处置智能体</span>
+                <strong id="disposition-auth-fail-count">0</strong>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">统计口径：审计日志 action=分析智能体认证失败 / 处置智能体认证失败</div>
+        </div>
+    </div>
+</div>
+
+<div class="card table-container" style="margin-top: 2rem;">
+    <h3>安全审计日志</h3>
+    <table id="audit-table">
+        <thead>
+            <tr>
+                <th>操作类型</th>
+                <th>状态</th>
+                <th>详情</th>
+                <th>IP 地址</th>
+                <th>时间 (本地)</th>
+            </tr>
+        </thead>
+        <tbody id="audit-tbody">
+            <!-- Logs will load here -->
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadAudit() {
+        const logs = await apiRequest('/api/audit/logs');
+        const tbody = document.getElementById('audit-tbody');
+        tbody.innerHTML = '';
+
+        logs.forEach(l => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td><strong>${l.action}</strong></td>
+            <td><span class="status-badge" style="background: ${['Success', '成功', '分析结果', '处置结果'].includes(l.status) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${['Success', '成功', '分析结果', '处置结果'].includes(l.status) ? '#10b981' : '#ef4444'};">${l.status}</span></td>
+            <td><small style="color: var(--text-muted);">${l.details || '-'}</small></td>
+            <td>${l.ip_address || 'Internal'}</td>
+            <td>${new Date(l.timestamp).toLocaleString()}</td>
+        `;
+            tbody.appendChild(row);
+        });
+
+        const statsPayload = await apiRequest('/api/audit/stats');
+        const actionStats = statsPayload.actions || [];
+        const failStats = statsPayload.agent_login_failures || [];
+
+        renderAuditChart(actionStats);
+        renderAgentAuthFailureSummary(logs, failStats);
+    }
+
+    function renderAgentAuthFailureSummary(logs, failStats) {
+        const analysisCount = logs.filter(l => l.action === '分析智能体认证失败').length;
+        const dispositionCount = logs.filter(l => l.action === '处置智能体认证失败').length;
+        const total = failStats.reduce((sum, item) => sum + (item.count || 0), 0);
+
+        document.getElementById('analysis-auth-fail-count').textContent = analysisCount;
+        document.getElementById('disposition-auth-fail-count').textContent = dispositionCount;
+        document.getElementById('agent-auth-fail-total').textContent = total;
+    }
+
+    function renderAuditChart(stats) {
+        const ctx = document.getElementById('chart-audit').getContext('2d');
+
+        // Prepare last 24 hours slots
+        const slots = [];
+        const now = new Date();
+        for (let i = 23; i >= 0; i--) {
+            const h = new Date(now.getTime() - i * 60 * 60 * 1000);
+            h.setMinutes(0, 0, 0);
+            slots.push({
+                iso: h.toISOString().split('.')[0].slice(0, 16).replace('T', ' '), // Match 'YYYY-MM-DD HH:mm'
+                label: h.getHours() + ":00",
+                data: {}
+            });
+        }
+
+        const actions = [...new Set(stats.map(s => s.action))];
+        if (actions.length === 0) actions.push('用户登录', '数据接收', '用户注销'); // Default labels
+
+        // Fill data
+        stats.forEach(s => {
+            const sDate = new Date(s.hour);
+            sDate.setMinutes(0, 0, 0);
+            const sIso = sDate.toISOString().split('.')[0].slice(0, 16).replace('T', ' ');
+            const slot = slots.find(h => h.iso.startsWith(sIso.slice(0, 13))); // Compare YYYY-MM-DD HH
+            if (slot) {
+                slot.data[s.action] = s.count;
+            }
+        });
+
+        const datasets = actions.map(action => {
+            let color = '#6366f1'; // Default
+            if (action === '数据接收' || action === 'DATA_INPUT') color = '#10b981';
+            if (action === '用户注销' || action === 'LOGOUT') color = '#f43f5e';
+            if (action.includes('拉取') || action === 'AGENT_FETCH_DATA') color = '#fbbf24';
+            if (action.includes('提交')) color = '#6366f1';
+
+            return {
+                label: action,
+                data: slots.map(s => s.data[action] || 0),
+                borderColor: color,
+                backgroundColor: color + '22',
+                fill: true,
+                tension: 0.4
+            };
+        });
+
+        if (window.auditChartInst) window.auditChartInst.destroy();
+        window.auditChartInst = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: slots.map(s => s.label),
+                datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAudit);
+</script>
+{% endblock %}

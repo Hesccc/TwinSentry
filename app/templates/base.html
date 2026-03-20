@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TwinSentry - 告警分析对话系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/TwinSentry.png') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+    {% if request.endpoint != 'auth.login_page' %}
+    <div class="sidebar">
+        <div class="logo">
+            <i class="fas fa-shield-alt"></i>
+            TwinSentry
+        </div>
+        <ul class="nav-links">
+            <li class="nav-item">
+                <a href="/" class="nav-link {{ 'active' if request.path == '/' }}" id="nav-dashboard">
+                    <i class="fas fa-tachometer-alt"></i> 仪表盘
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/alerts" class="nav-link {{ 'active' if request.path == '/alerts' }}" id="nav-alerts">
+                    <i class="fas fa-list-ul"></i> 实时告警
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/settings" class="nav-link {{ 'active' if request.path == '/settings' }}" id="nav-settings">
+                    <i class="fas fa-bell"></i> 系统设置
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/audit" class="nav-link {{ 'active' if request.path == '/audit' }}" id="nav-audit">
+                    <i class="fas fa-user-shield"></i> 审计监控
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/api-docs-page" class="nav-link {{ 'active' if request.path == '/api-docs-page' }}"
+                    id="nav-docs">
+                    <i class="fas fa-code"></i> API文档
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/skills-page" class="nav-link {{ 'active' if request.path == '/skills-page' }}"
+                    id="nav-skills">
+                    <i class="fas fa-vial"></i> Skill 中心
+                </a>
+            </li>
+        </ul>
+        <div class="profile-section"
+            style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <a href="/profile" class="nav-link {{ 'active' if request.path == '/profile' }}" id="nav-profile">
+                <i class="fas fa-user-circle"></i> 个人中心
+            </a>
+            <a href="#" class="nav-link" id="btn-logout">
+                <i class="fas fa-sign-out-alt"></i> 退出登录
+            </a>
+        </div>
+    </div>
+    <div class="main-wrapper">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 id="page-title">{% block page_title %}{% endblock %}</h2>
+            <div class="user-info" style="display: flex; align-items: center; gap: 1rem;">
+                <span id="header-username">Admin</span>
+                <div id="avatar-container"
+                    style="width: 40px; height: 40px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <img id="header-avatar" src="" alt=""
+                        style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                    <i id="header-avatar-icon" class="fas fa-user" style="color: var(--text-muted);"></i>
+                </div>
+            </div>
+        </header>
+        {% block content %}{% endblock %}
+    </div>
+    {% else %}
+    {% block login_content %}{% endblock %}
+    {% endif %}
+
+    <div id="modal-container" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 id="modal-title">Modal Title</h3>
+                <button id="close-modal"
+                    style="background: none; border: none; color: white; cursor: pointer; font-size: 1.5rem;">&times;</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>
