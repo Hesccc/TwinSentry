@@ -79,7 +79,7 @@ def get_skills_config():
     
     # Pre-processed previews for the frontend
     previews = {}
-    scripts_dir = os.path.join(current_app.root_path, '..', 'Skills', 'TwinSentry', 'scripts')
+    scripts_dir = os.path.join(current_app.root_path, '..', 'skills', 'TwinSentry', 'scripts')
     for filename in ['analysis_agent_skill.py', 'disposition_agent_skill.py', 'langchain_wrapper.py', 'dify_tool.yaml']:
         path = os.path.join(scripts_dir, filename)
         if os.path.exists(path):
@@ -105,7 +105,7 @@ def get_skills_config():
 def download_skill_file():
     import zipfile
     
-    skills_root = os.path.abspath(os.path.join(current_app.root_path, '..', 'Skills', 'TwinSentry'))
+    skills_root = os.path.abspath(os.path.join(current_app.root_path, '..', 'skills', 'TwinSentry'))
     if not os.path.exists(skills_root):
         return jsonify({'error': 'Skills directory not found'}), 404
 

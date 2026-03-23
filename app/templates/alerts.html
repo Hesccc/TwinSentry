@@ -16,7 +16,8 @@
                 <option value="处置中">处置中</option>
                 <option value="已处置">已处置</option>
             </select>
-            <button class="btn" style="width: auto;" onclick="loadData()">刷新数据</button>
+            <button id="refresh-btn" class="btn" style="width: auto;" onclick="loadData(true)">刷新数据</button>
+            <span id="refresh-status" style="color: var(--text-muted); font-size: 0.8rem;">未刷新</span>
         </div>
     </div>
     <table id="alert-table">
@@ -40,42 +41,64 @@
 
 {% block extra_js %}
 <script>
-    async function loadData() {
-        const alerts = await apiRequest('/api/alerts');
+    async function loadData(isManual = false) {
         const tbody = document.getElementById('alert-tbody');
         const selectedStatus = document.getElementById('status-filter')?.value || '';
-        tbody.innerHTML = '';
+        const refreshBtn = document.getElementById('refresh-btn');
+        const refreshStatus = document.getElementById('refresh-status');
 
-        const filteredAlerts = selectedStatus ? alerts.filter(a => a.status === selectedStatus) : alerts;
-
-        if (!filteredAlerts.length) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1rem;">当前筛选条件下暂无告警</td></tr>`;
-            return;
+        if (isManual) {
+            if (refreshBtn) refreshBtn.disabled = true;
+            if (refreshStatus) refreshStatus.textContent = '刷新中...';
         }
 
-        filteredAlerts.forEach((a, index) => {
-            const row = document.createElement('tr');
-            row.style.cursor = 'pointer';
-            row.onclick = (e) => {
-                if (e.target.tagName !== 'BUTTON') showDetails(a);
-            };
+        try {
+            const alerts = await apiRequest('/api/alerts');
+            tbody.innerHTML = '';
 
-            const createdAt = new Date(a.created_at).toLocaleString();
-            const updatedAt = new Date(a.updated_at).toLocaleString();
+            const alertList = Array.isArray(alerts) ? alerts : [];
+            const filteredAlerts = selectedStatus ? alertList.filter(a => a.status === selectedStatus) : alertList;
 
-            row.innerHTML = `
-            <td>${index + 1}</td>
-            <td style="font-weight: 500;">${a.id}</td>
-            <td>${a.title}</td>
-            <td><span class="status-badge badge-${getStatusKey(a.status)}">${a.status}</span></td>
-            <td>${createdAt}</td>
-            <td>${updatedAt}</td>
-            <td>
-                <button class="btn" style="background: var(--danger); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px;" onclick="deleteAlert(${a.id})">删除</button>
-            </td>
-        `;
-            tbody.appendChild(row);
-        });
+            if (!filteredAlerts.length) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1rem;">当前筛选条件下暂无告警</td></tr>`;
+                return;
+            }
+
+            filteredAlerts.forEach((a, index) => {
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') showDetails(a);
+                };
+
+                const canRollback = a.status === '分析中' || a.status === '处置中';
+                const rollbackButton = canRollback
+                    ? `<button class="btn" style="background: #f59e0b; padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px; margin-right: 6px;" onclick="rollbackAlert(${a.id}, '${a.status}')">回退重试</button>`
+                    : '';
+
+                const createdAt = new Date(a.created_at).toLocaleString();
+                const updatedAt = new Date(a.updated_at).toLocaleString();
+
+                row.innerHTML = `
+                <td>${index + 1}</td>
+                <td style="font-weight: 500;">${a.id}</td>
+                <td>${a.title}</td>
+                <td><span class="status-badge badge-${getStatusKey(a.status)}">${a.status}</span></td>
+                <td>${createdAt}</td>
+                <td>${updatedAt}</td>
+                <td>
+                    ${rollbackButton}
+                    <button class="btn" style="background: var(--danger); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px;" onclick="deleteAlert(${a.id})">删除</button>
+                </td>
+            `;
+                tbody.appendChild(row);
+            });
+        } finally {
+            if (isManual) {
+                if (refreshBtn) refreshBtn.disabled = false;
+                if (refreshStatus) refreshStatus.textContent = `上次刷新：${new Date().toLocaleTimeString()}`;
+            }
+        }
     }
 
     function getStatusKey(status) {
@@ -133,6 +156,28 @@
         </div>
     `;
         modal.show('告警详情', contentHtml);
+    }
+
+    async function rollbackAlert(id, currentStatus) {
+        const targetStatus = currentStatus === '分析中'
+            ? '待分析'
+            : (currentStatus === '处置中' ? '已分析' : null);
+
+        if (!targetStatus) {
+            showFeedback('当前状态不支持回退', 'error');
+            return;
+        }
+
+        const ok = confirm(`确认回退告警状态吗？\n${currentStatus} -> ${targetStatus}\n（回退用于重试，已有关联结果内容将保留）`);
+        if (!ok) return;
+
+        const res = await apiRequest(`/api/alerts/${id}/rollback`, 'POST');
+        if (res && res.data) {
+            showFeedback('状态回退成功');
+            loadData();
+        } else {
+            showFeedback((res && res.message) ? res.message : '状态回退失败', 'error');
+        }
     }
 
     async function deleteAlert(id) {

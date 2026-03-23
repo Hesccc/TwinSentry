@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template
 from ..models import Alert, AuditLog, db, AlertStatus
-from ..services.utils import token_required, token_required_page
+from ..services.utils import token_required, token_required_page, log_audit
 from datetime import datetime, timedelta
 from sqlalchemy import func, text
 
@@ -70,6 +70,49 @@ def delete_alert(current_user, alert_id):
     alert.is_delete = 1
     db.session.commit()
     return jsonify({'message': 'Alert marked as deleted'})
+
+@main.route('/api/alerts/<int:alert_id>/rollback', methods=['POST'])
+@token_required
+def rollback_alert_status(current_user, alert_id):
+    alert = Alert.query.filter_by(id=alert_id, is_delete=0).first()
+    if not alert:
+        log_audit('人工回退告警状态', '失败', user_id=current_user.id, details=f"告警不存在或已删除，ID: {alert_id}")
+        return jsonify({'message': 'Alert not found'}), 404
+
+    rollback_map = {
+        AlertStatus.ANALYZING.value: AlertStatus.PENDING.value,
+        AlertStatus.PROCESSING.value: AlertStatus.ANALYZED.value
+    }
+
+    target_status = rollback_map.get(alert.status)
+    if not target_status:
+        log_audit(
+            '人工回退告警状态',
+            '失败',
+            user_id=current_user.id,
+            details=f"告警 ID: {alert.id}, 标题: {alert.title}, 当前状态不支持回退: {alert.status}"
+        )
+        return jsonify({'message': 'Current status does not support rollback'}), 400
+
+    from_status = alert.status
+    alert.status = target_status
+    db.session.commit()
+
+    log_audit(
+        '人工回退告警状态',
+        '成功',
+        user_id=current_user.id,
+        details=f"告警 ID: {alert.id}, 标题: {alert.title}, 状态回退: {from_status} -> {target_status}"
+    )
+
+    return jsonify({
+        'message': 'Rollback success',
+        'data': {
+            'id': alert.id,
+            'from_status': from_status,
+            'to_status': target_status
+        }
+    })
 
 @main.route('/api/stats/dashboard', methods=['GET'])
 @token_required

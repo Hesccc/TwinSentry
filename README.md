@@ -218,7 +218,7 @@ TwinSentry/
 │  ├─ services/        # 工具与调度服务
 │  ├─ templates/       # 页面模板
 │  └─ static/          # 静态资源（css/js/images/uploads）
-├─ Skills/TwinSentry/  # Skills 包及脚本模板
+├─ skills/TwinSentry/  # Skills 包及脚本模板
 ├─ run.py              # 应用入口
 ├─ config.py           # 配置加载
 └─ requirements.txt

@@ -1,5 +1,5 @@
 ---
-name: twin-sentry
+name: TwinSentry
 description: TwinSentry 安全告警分析系统接口工具。用于获取告警、提交分析结论、处置记录，以及与 TwinSentry API 交互。
 metadata:
   openclaw:
@@ -19,17 +19,21 @@ metadata:
 ## 功能
 
 ### 1. 分析 Agent (Analysis Agent)
+
 从 TwinSentry 获取待分析告警，并提交分析结论和富化数据。
 
 **主要方法：**
+
 - `fetch_task()` - 获取一条待分析告警（原子性）
 - `submit_result(alert_id, analysis_log)` - 提交分析结论
 - `run_once(analyze_func)` - 完整的过程
 
 ### 2. 处置 Agent (Disposition Agent)
+
 获取已分析的告警并执行处置动作。
 
 **主要方法：**
+
 - `fetch_task()` - 获取一条待处置告警
 - `submit_result(alert_id, action_log)` - 提交处置记录
 - `run_once(dispose_func)` - 完整的过程
@@ -186,3 +190,4 @@ python3 disposition_agent_skill.py
 1. **API Key 管理**：在请求头中使用 `X-Agent-Key`
 2. **连接地址**：确保使用了正确的 `/api/agent/` 前缀
 3. **网络连接**：确保能够访问 TwinSentry 服务器
+
