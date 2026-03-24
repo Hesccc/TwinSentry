@@ -1,0 +1,35 @@
+# --- 用户指定的过滤项 ---
+.idea/
+.claude/
+.venv/
+.env
+CLAUDE.md
+
+# --- Python 垃圾文件 ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- 操作系统临时文件 ---
+.DS_Store
+Thumbs.db

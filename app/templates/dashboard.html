@@ -3,7 +3,7 @@
 {% block page_title %}告警概览{% endblock %}
 
 {% block content %}
-<div class="stat-cards-container" style="grid-template-columns: repeat(6, 1fr);">
+<div class="stat-cards-container dashboard-stat-cards" style="grid-template-columns: repeat(6, 1fr);">
     <div class="stat-card card-navy">
         <div class="stat-card-title">采集总数</div>
         <div class="stat-card-value" id="stat-raw">0</div>
@@ -36,7 +36,7 @@
     </div>
 </div>
 
-<div class="dashboard-grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 1.5rem;">
+<div class="dashboard-grid dashboard-top-grid" style="grid-template-columns: 2fr 1fr; margin-bottom: 1.5rem;">
     <div class="card">
         <h3>告警趋势综合分析 (24h)</h3>
         <div class="chart-container" style="height: 350px;">
@@ -51,7 +51,7 @@
     </div>
 </div>
 
-<div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+<div class="dashboard-grid dashboard-bottom-grid" style="grid-template-columns: 1fr 1fr;">
     <div class="card">
         <h3>高频告警 Top 5</h3>
         <div class="chart-container" style="height: 300px;">
@@ -223,4 +223,24 @@
     document.addEventListener('DOMContentLoaded', refreshStats);
     setInterval(refreshStats, 30000);
 </script>
+
+<style>
+    @media (max-width: 900px) {
+        .dashboard-stat-cards {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+
+        .dashboard-top-grid,
+        .dashboard-bottom-grid {
+            grid-template-columns: 1fr !important;
+            margin-bottom: 1rem !important;
+        }
+    }
+
+    @media (max-width: 540px) {
+        .dashboard-stat-cards {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
 {% endblock %}

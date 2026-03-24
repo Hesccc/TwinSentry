@@ -3,7 +3,7 @@
 {% block page_title %}API 接口使用介绍 (API Documentation){% endblock %}
 
 {% block content %}
-<div class="docs-container" style="display: grid; grid-template-columns: 240px 1fr; gap: 2rem; align-items: start;">
+<div class="docs-container docs-layout" style="display: grid; grid-template-columns: 240px 1fr; gap: 2rem; align-items: start;">
     <!-- Sidebar Navigation -->
     <aside class="docs-sidebar card" style="position: sticky; top: 1rem; padding: 1rem;">
         <h4
@@ -221,6 +221,17 @@
 
     .copy-btn:hover {
         background: var(--primary-color);
+    }
+
+    @media (max-width: 900px) {
+        .docs-layout {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+        }
+
+        .docs-sidebar {
+            position: static !important;
+        }
     }
 </style>
 {% endblock %}

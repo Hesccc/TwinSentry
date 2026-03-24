@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <div class="skills-two-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
         <!-- Analysis Agent Card -->
         <div class="card">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
@@ -91,7 +91,7 @@ def dispose():
 
     <div class="card">
         <h4>📚 更多资源</h4>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+        <div class="skills-resource-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
             <div class="resource-card" onclick="showResource('analysis_agent_skill.py')">
                 <i class="fab fa-python" style="font-size: 2rem; color: #3776ab; margin-bottom: 0.5rem;"></i>
                 <div style="font-weight: 500;">Python SDK</div>
@@ -158,6 +158,17 @@ def dispose():
     .copy-btn:hover {
         background: var(--primary-color);
         border-color: var(--primary-color);
+    }
+
+    @media (max-width: 900px) {
+        .skills-two-col {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+        }
+
+        .skills-resource-grid {
+            grid-template-columns: 1fr !important;
+        }
     }
 </style>
 {% endblock %}

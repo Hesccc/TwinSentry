@@ -14,7 +14,8 @@
 
 <body>
     {% if request.endpoint != 'auth.login_page' %}
-    <div class="sidebar">
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+    <div class="sidebar" id="app-sidebar">
         <div class="logo">
             <i class="fas fa-shield-alt"></i>
             TwinSentry
@@ -64,9 +65,14 @@
         </div>
     </div>
     <div class="main-wrapper">
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h2 id="page-title">{% block page_title %}{% endblock %}</h2>
-            <div class="user-info" style="display: flex; align-items: center; gap: 1rem;">
+        <header class="page-header">
+            <div class="page-title-wrap">
+                <button id="mobile-menu-toggle" class="mobile-menu-btn" type="button" aria-label="打开导航菜单">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 id="page-title">{% block page_title %}{% endblock %}</h2>
+            </div>
+            <div class="user-info">
                 <span id="header-username">Admin</span>
                 <div id="avatar-container"
                     style="width: 40px; height: 40px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; overflow: hidden;">

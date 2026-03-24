@@ -3,7 +3,7 @@
 {% block page_title %}审计监控{% endblock %}
 
 {% block content %}
-<div class="dashboard-grid" style="grid-template-columns: 2fr 1fr; margin-top: 0;">
+<div class="dashboard-grid audit-top-grid" style="grid-template-columns: 2fr 1fr; margin-top: 0;">
     <div class="card">
         <h3>审计趋势分析</h3>
         <div class="chart-container" style="height: 300px;">
@@ -154,4 +154,12 @@
 
     document.addEventListener('DOMContentLoaded', loadAudit);
 </script>
+
+<style>
+    @media (max-width: 900px) {
+        .audit-top-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
 {% endblock %}

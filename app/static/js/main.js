@@ -172,9 +172,47 @@ function fallbackCopy(text, callback) {
     document.body.removeChild(textArea);
 }
 
+function initMobileNav() {
+    const toggleBtn = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.getElementById('app-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+
+    if (!toggleBtn || !sidebar || !backdrop) return;
+
+    const closeMenu = () => {
+        sidebar.classList.remove('mobile-open');
+        backdrop.classList.remove('active');
+        document.body.classList.remove('mobile-menu-open');
+    };
+
+    const openMenu = () => {
+        sidebar.classList.add('mobile-open');
+        backdrop.classList.add('active');
+        document.body.classList.add('mobile-menu-open');
+    };
+
+    toggleBtn.addEventListener('click', () => {
+        const isOpen = sidebar.classList.contains('mobile-open');
+        if (isOpen) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    });
+
+    backdrop.addEventListener('click', closeMenu);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 900) {
+            closeMenu();
+        }
+    });
+}
+
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname !== '/login') {
         initUser();
+        initMobileNav();
     }
 });
