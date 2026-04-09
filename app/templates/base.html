@@ -1,10 +1,26 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" id="html-root">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TwinSentry - 告警分析对话系统</title>
+    <!-- 主题初始化：在 CSS 加载前同步应用主题，防止白闪 -->
+    <script>
+        (function () {
+            const saved = localStorage.getItem('ts-theme') || 'system';
+            const root = document.documentElement;
+            if (saved === 'light') {
+                root.setAttribute('data-theme', 'light');
+            } else if (saved === 'dark') {
+                root.setAttribute('data-theme', 'dark');
+            } else {
+                // system
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -73,6 +89,18 @@
                 <h2 id="page-title">{% block page_title %}{% endblock %}</h2>
             </div>
             <div class="user-info">
+                <!-- 主题切换按钮组 -->
+                <div class="theme-switcher" id="theme-switcher" title="切换主题">
+                    <button class="theme-btn" id="theme-btn-dark" title="暗黑模式" onclick="setTheme('dark')">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="theme-btn" id="theme-btn-system" title="跟随系统" onclick="setTheme('system')">
+                        <i class="fas fa-laptop"></i>
+                    </button>
+                    <button class="theme-btn" id="theme-btn-light" title="明亮模式" onclick="setTheme('light')">
+                        <i class="fas fa-sun"></i>
+                    </button>
+                </div>
                 <span id="header-username">Admin</span>
                 <div id="avatar-container"
                     style="width: 40px; height: 40px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; overflow: hidden;">
@@ -101,6 +129,47 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
+
+    <!-- 主题管理 JS -->
+    <script>
+        const THEME_KEY = 'ts-theme';
+        const THEMES = ['dark', 'system', 'light'];
+
+        function applyTheme(preference) {
+            const root = document.documentElement;
+            let resolved;
+            if (preference === 'light') {
+                resolved = 'light';
+            } else if (preference === 'dark') {
+                resolved = 'dark';
+            } else {
+                resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            root.setAttribute('data-theme', resolved);
+            // Highlight active button
+            THEMES.forEach(t => {
+                const btn = document.getElementById('theme-btn-' + t);
+                if (btn) btn.classList.toggle('active', t === preference);
+            });
+        }
+
+        function setTheme(preference) {
+            localStorage.setItem(THEME_KEY, preference);
+            applyTheme(preference);
+        }
+
+        // Init on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const saved = localStorage.getItem(THEME_KEY) || 'system';
+            applyTheme(saved);
+        });
+
+        // Listen to OS theme change (only affects 'system' mode)
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+            const saved = localStorage.getItem(THEME_KEY) || 'system';
+            if (saved === 'system') applyTheme('system');
+        });
+    </script>
 </body>
 
 </html>

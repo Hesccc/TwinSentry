@@ -123,10 +123,16 @@
             <div class="form-group">
                 <label>分析智能体 (Analysis Agent Key)</label>
                 <input type="text" id="analysis-agent-key" class="form-input" placeholder="请输入 Analysis API Key">
+                <button class="btn btn-outline key-reset-btn" type="button" onclick="resetAgentKey('analysis')">
+                    <i class="fas fa-arrows-rotate" style="margin-right: 0.5rem;"></i> 重置分析 Key
+                </button>
             </div>
             <div class="form-group">
                 <label>处置智能体 (Disposition Agent Key)</label>
                 <input type="text" id="disposition-agent-key" class="form-input" placeholder="请输入 Disposition API Key">
+                <button class="btn btn-outline key-reset-btn" type="button" onclick="resetAgentKey('disposition')">
+                    <i class="fas fa-arrows-rotate" style="margin-right: 0.5rem;"></i> 重置处置 Key
+                </button>
             </div>
         </div>
     </div>
@@ -271,6 +277,26 @@
         }
     }
 
+    async function resetAgentKey(agentType) {
+        const typeLabel = agentType === 'analysis' ? '分析' : '处置';
+        const confirmed = confirm(`确认重置${typeLabel} Agent Key吗？\n重置后旧 Key 将立即失效。`);
+        if (!confirmed) return;
+
+        const res = await apiRequest('/api/settings/system/reset-agent-key', 'POST', { agent_type: agentType });
+        if (!res || !res.key_value) {
+            showFeedback((res && res.message) ? res.message : `重置${typeLabel} Key失败`, 'error');
+            return;
+        }
+
+        if (agentType === 'analysis') {
+            document.getElementById('analysis-agent-key').value = res.key_value;
+        } else {
+            document.getElementById('disposition-agent-key').value = res.key_value;
+        }
+
+        showFeedback(`${typeLabel} Agent Key 已重置`);
+    }
+
     document.addEventListener('DOMContentLoaded', loadSettings);
 </script>
 
@@ -307,6 +333,13 @@
     .btn-outline:hover {
         background: rgba(255, 255, 255, 0.05) !important;
         border-color: white !important;
+    }
+
+    .key-reset-btn {
+        margin-top: 0.75rem;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: transparent;
     }
 
     /* Toggle Switch Styles (restored and polished) */

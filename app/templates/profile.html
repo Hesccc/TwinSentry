@@ -46,10 +46,12 @@
             <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">分析智能体
                 (Analysis Agent Key)</label>
             <div
-                style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
-                <code id="analysis-key" style="color: var(--accent-blue);">Loading...</code>
-                <button class="btn" style="width: auto; padding: 5px 10px;"
-                    onclick="copyKey('analysis-key')">复制</button>
+                style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                <code id="analysis-key" style="color: var(--accent-blue); word-break: break-all;">Loading...</code>
+                <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                    <button class="btn" style="width: auto; padding: 5px 10px;" onclick="copyKey('analysis-key')">复制</button>
+                    <button class="btn btn-outline" style="width: auto; padding: 5px 10px;" onclick="resetProfileKey('analysis')">重置</button>
+                </div>
             </div>
         </div>
 
@@ -57,10 +59,12 @@
             <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">处置智能体
                 (Disposition Agent Key)</label>
             <div
-                style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
-                <code id="disposition-key" style="color: var(--accent-blue);">Loading...</code>
-                <button class="btn" style="width: auto; padding: 5px 10px;"
-                    onclick="copyKey('disposition-key')">复制</button>
+                style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                <code id="disposition-key" style="color: var(--accent-blue); word-break: break-all;">Loading...</code>
+                <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                    <button class="btn" style="width: auto; padding: 5px 10px;" onclick="copyKey('disposition-key')">复制</button>
+                    <button class="btn btn-outline" style="width: auto; padding: 5px 10px;" onclick="resetProfileKey('disposition')">重置</button>
+                </div>
             </div>
         </div>
     </div>
@@ -130,6 +134,26 @@
         copyToClipboard(key, () => {
             showFeedback('Key 已复制到剪贴板');
         });
+    }
+
+    async function resetProfileKey(agentType) {
+        const typeLabel = agentType === 'analysis' ? '分析' : '处置';
+        const ok = confirm(`确认重置${typeLabel} Agent Key吗？\n重置后旧 Key 将立即失效。`);
+        if (!ok) return;
+
+        const res = await apiRequest('/api/settings/system/reset-agent-key', 'POST', { agent_type: agentType });
+        if (!res || !res.key_value) {
+            showFeedback((res && res.message) ? res.message : `重置${typeLabel} Key失败`, 'error');
+            return;
+        }
+
+        if (agentType === 'analysis') {
+            document.getElementById('analysis-key').textContent = res.key_value;
+        } else {
+            document.getElementById('disposition-key').textContent = res.key_value;
+        }
+
+        showFeedback(`${typeLabel} Agent Key 已重置`);
     }
 
     document.addEventListener('DOMContentLoaded', loadProfile);

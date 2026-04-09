@@ -4,6 +4,7 @@ from ..services.utils import token_required, log_audit
 import requests
 import smtplib
 import ssl
+import secrets
 from email.mime.text import MIMEText
 from datetime import datetime
 
@@ -191,3 +192,38 @@ def system_settings(current_user):
     db.session.commit()
     log_audit('修改系统配置', '成功', user_id=current_user.id, details="更新了系统全局参数")
     return jsonify({'message': 'System settings updated'})
+
+
+@settings.route('/system/reset-agent-key', methods=['POST'])
+@token_required
+def reset_agent_key(current_user):
+    data = request.get_json() or {}
+    agent_type = (data.get('agent_type') or '').strip().lower()
+
+    key_map = {
+        'analysis': 'ANALYSIS_AGENT_KEY',
+        'disposition': 'DISPOSITION_AGENT_KEY'
+    }
+
+    if agent_type not in key_map:
+        log_audit('重置Agent Key', '失败', user_id=current_user.id, details=f"非法类型: {agent_type}")
+        return jsonify({'message': 'Invalid agent_type, expected analysis or disposition'}), 400
+
+    config_key = key_map[agent_type]
+    new_key = secrets.token_hex(16)
+
+    config = SystemConfig.query.filter_by(config_key=config_key).first()
+    if not config:
+        config = SystemConfig(config_key=config_key, config_value=new_key)
+        db.session.add(config)
+    else:
+        config.config_value = new_key
+
+    db.session.commit()
+    log_audit('重置Agent Key', '成功', user_id=current_user.id, details=f"{config_key} 已重置")
+
+    return jsonify({
+        'message': f'{agent_type} agent key reset successfully',
+        'key_type': agent_type,
+        'key_value': new_key
+    })

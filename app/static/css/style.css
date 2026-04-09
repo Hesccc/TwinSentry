@@ -13,6 +13,101 @@
     --status-processing: #f472b6;
     --status-processed: #34d399;
     --danger: #ef4444;
+    --theme-switcher-bg: rgba(99, 102, 241, 0.08);
+    --theme-switcher-border: rgba(99, 102, 241, 0.25);
+    --theme-btn-hover: rgba(99, 102, 241, 0.18);
+    --theme-btn-active-bg: rgba(99, 102, 241, 0.3);
+    --theme-btn-active-color: #a5b4fc;
+}
+
+/* ===== Light Theme Variables ===== */
+[data-theme="light"] {
+    --bg-dark: #f1f5f9;
+    --bg-card: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #cbd5e1;
+    --theme-switcher-bg: rgba(99, 102, 241, 0.07);
+    --theme-switcher-border: rgba(99, 102, 241, 0.2);
+    --theme-btn-hover: rgba(99, 102, 241, 0.12);
+    --theme-btn-active-bg: rgba(99, 102, 241, 0.18);
+    --theme-btn-active-color: #4f46e5;
+}
+
+[data-theme="light"] body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+}
+
+[data-theme="light"] .sidebar {
+    background: var(--bg-card);
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="light"] .card {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 16px rgba(15, 23, 42, 0.07);
+}
+
+[data-theme="light"] .modal-content {
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+[data-theme="light"] .form-input {
+    background: #f8fafc;
+    color: var(--text-main);
+    border-color: var(--border-color);
+}
+
+[data-theme="light"] .mobile-menu-btn {
+    background: rgba(241, 245, 249, 0.9);
+}
+
+[data-theme="light"] #close-modal {
+    color: var(--text-main);
+}
+
+[data-theme="light"] #avatar-container {
+    background: #e2e8f0 !important;
+}
+
+/* ===== Theme Switcher Button Group ===== */
+.theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--theme-switcher-bg);
+    border: 1px solid var(--theme-switcher-border);
+    border-radius: 10px;
+    padding: 3px;
+    transition: border-color 0.3s;
+}
+
+.theme-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s, color 0.2s;
+    position: relative;
+}
+
+.theme-btn:hover {
+    background: var(--theme-btn-hover);
+    color: var(--text-main);
+}
+
+.theme-btn.active {
+    background: var(--theme-btn-active-bg);
+    color: var(--theme-btn-active-color);
 }
 
 * {
@@ -270,6 +365,7 @@ th {
     padding: 2rem;
     max-height: 90vh;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* Stat Cards */
