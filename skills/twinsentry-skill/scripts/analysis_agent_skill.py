@@ -1,8 +1,7 @@
 """
 TwinSentry — 分析 Agent 技能包 (Analysis Agent Skill)
 =====================================================
-适用于 AI Agent 框架（如 Dify、AutoGPT、LangChain 等）。
-本脚本封装了与 TwinSentry 分析 Agent 接口的完整交互逻辑：
+本 Python 脚本封装了与 TwinSentry 分析 Agent 接口的完整交互逻辑：
   1. 获取一条待分析的告警任务 (GET /analysis/fetch)
   2. 提交分析结论与 Splunk 富化数据 (POST /analysis/submit)
 
@@ -14,10 +13,15 @@ import json
 import logging
 from typing import Optional
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # ===== 配置区 =====
-TWINSENTRY_BASE_URL = "http://192.168.0.2:5000"   # TwinSentry 服务器地址
-ANALYSIS_AGENT_KEY  = "your-analysis-agent-key-here"  # 分析 Agent API Key
-REQUEST_TIMEOUT     = 30                          # 请求超时（秒）
+TWINSENTRY_BASE_URL = os.environ.get("TWINSENTRY_BASE_URL", "http://192.168.0.2:5000")   # TwinSentry 服务器地址
+ANALYSIS_AGENT_KEY  = os.environ.get("ANALYSIS_AGENT_KEY", "your-analysis-agent-key-here")  # 分析 Agent API Key
+REQUEST_TIMEOUT     = int(os.environ.get("REQUEST_TIMEOUT", 30))                          # 请求超时（秒）
 # ==================
 
 logger = logging.getLogger(__name__)
@@ -58,10 +62,14 @@ class TwinSentryAnalysisSkill:
     # 公开方法
     # ──────────────────────────────────────────────────────────────────────
 
-    def fetch_task(self) -> Optional[dict]:
+    def fetch_task(self, alert_id: Optional[int] = None) -> Optional[dict]:
         """
         从 TwinSentry 原子性获取一条待分析告警。
         服务端使用 SELECT FOR UPDATE SKIP LOCKED，保证同一告警不会被多个 Agent 并发获取。
+
+        参数：
+            alert_id (int): 可选。如果传入，则只尝试获取该给定 ID 的告警。
+        
 
         返回值：
             dict  — 告警信息，包含以下字段：
@@ -78,8 +86,9 @@ class TwinSentryAnalysisSkill:
             ...     print(task["title"], task["text_lines"])
         """
         url = f"{self.base_url}/analysis/fetch"
+        params = {"alert_id": alert_id} if alert_id is not None else None
         try:
-            resp = requests.get(url, headers=self.headers, timeout=self.timeout)
+            resp = requests.get(url, params=params, headers=self.headers, timeout=self.timeout)
             data = resp.json()
             if resp.status_code == 200 and data.get("code") == 0:
                 alert = data["data"].get("alert")
@@ -157,13 +166,15 @@ class TwinSentryAnalysisSkill:
             logger.error(f"[AnalysisSkill] submit 异常: {e}")
             return False
 
-    def run_once(self, analyze_func) -> bool:
+    def run_once(self, analyze_func, alert_id: Optional[int] = None) -> bool:
         """
         便捷方法：完成一次完整的"获取 → 分析 → 提交"流程。
 
         参数：
             analyze_func — 可调用对象，接收告警 dict，返回 dict:
                            { "analysis_log": str, "enrichment_data": dict (可选) }
+            alert_id     — 可选，只处理特定 ID 的告警
+
 
         返回值：
             True  — 成功处理一条告警
@@ -178,7 +189,7 @@ class TwinSentryAnalysisSkill:
             ...     }
             >>> skill.run_once(my_analyze)
         """
-        task = self.fetch_task()
+        task = self.fetch_task(alert_id=alert_id)
         if not task:
             return False
 

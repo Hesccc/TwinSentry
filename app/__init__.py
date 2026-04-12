@@ -48,6 +48,10 @@ def create_app(config_name='default'):
     from .routes.docs import docs as docs_blueprint
     app.register_blueprint(docs_blueprint)
 
+    # 配置skills路由
+    from .routes.skills import skills as skills_blueprint
+    app.register_blueprint(skills_blueprint)
+
     # Add scheduler jobs
     from .services.notifications import check_timeouts
     if not scheduler.get_job('timeout_check'):
@@ -68,9 +72,9 @@ def create_app(config_name='default'):
                 import secrets
                 db.session.add(SystemConfig(config_key='ANALYSIS_AGENT_KEY', config_value=secrets.token_hex(16)))
             
-            if not SystemConfig.query.filter_by(config_key='DISPOSITION_AGENT_KEY').first():
+            if not SystemConfig.query.filter_by(config_key='ACTION_AGENT_KEY').first():
                 import secrets
-                db.session.add(SystemConfig(config_key='DISPOSITION_AGENT_KEY', config_value=secrets.token_hex(16)))
+                db.session.add(SystemConfig(config_key='ACTION_AGENT_KEY', config_value=secrets.token_hex(16)))
             
             if not SystemConfig.query.filter_by(config_key='NOTIFY_TIMEOUT_MINUTES').first():
                 db.session.add(SystemConfig(config_key='NOTIFY_TIMEOUT_MINUTES', config_value='20'))

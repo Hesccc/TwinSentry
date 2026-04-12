@@ -144,7 +144,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 3rem;
+    margin-bottom: 0rem;
     color: var(--primary-color);
 }
 
@@ -359,14 +359,34 @@ th {
 
 .modal-content {
     background: var(--bg-card);
-    width: 90%;
-    max-width: 800px;
+    width: 80%;
+    max-width: 1500px;
     border-radius: 1rem;
     padding: 2rem;
     max-height: 90vh;
     overflow-y: auto;
     overflow-x: hidden;
 }
+
+/* Custom scrollbar to keep corners rounded */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 1rem 0;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 1rem;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
 
 /* Stat Cards */
 .stat-cards-container {

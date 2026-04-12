@@ -42,7 +42,7 @@
                     <p style="font-size: 0.8rem; font-weight: 600;">处置智能体 (Disposition Agent):</p>
                     <code
                         style="display: block; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem;">
-                        X-Agent-Key: <span class="disposition-key">YOUR_DISPOSITION_KEY</span>
+                        X-Agent-Key: <span class="action-key">YOUR_DISPOSITION_KEY</span>
                     </code>
                 </div>
             </div>
@@ -244,7 +244,7 @@
             const config = res.data;
             document.querySelectorAll('.server-url').forEach(el => el.textContent = config.server_url);
             document.querySelectorAll('.analysis-key').forEach(el => el.textContent = config.analysis_agent_key);
-            document.querySelectorAll('.disposition-key').forEach(el => el.textContent = config.disposition_agent_key);
+            document.querySelectorAll('.action-key').forEach(el => el.textContent = config.action_agent_key);
         }
     }
 

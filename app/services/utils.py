@@ -17,7 +17,7 @@ def verify_agent_key(agent_type='ANALYSIS', return_reason=False):
     import secrets
 
     # Map agent type to config key
-    config_key = 'ANALYSIS_AGENT_KEY' if agent_type == 'ANALYSIS' else 'DISPOSITION_AGENT_KEY'
+    config_key = 'ANALYSIS_AGENT_KEY' if agent_type == 'ANALYSIS' else 'ACTION_AGENT_KEY'
 
     # Try header first, then query parameter
     auth_header = request.headers.get('X-Agent-Key')

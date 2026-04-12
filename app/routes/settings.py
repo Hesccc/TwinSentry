@@ -159,7 +159,7 @@ def system_settings(current_user):
         'MAIL_SERVER', 'MAIL_PORT', 'MAIL_USERNAME', 
         'MAIL_PASSWORD', 'MAIL_ENCRYPTION', 'MAIL_DEFAULT_SENDER',
         'DEDUPLICATION_ENABLED', 'DEDUPLICATION_MODE',
-        'ANALYSIS_AGENT_KEY', 'DISPOSITION_AGENT_KEY'
+        'ANALYSIS_AGENT_KEY', 'ACTION_AGENT_KEY'
     ]
     
     if request.method == 'GET':
@@ -202,7 +202,7 @@ def reset_agent_key(current_user):
 
     key_map = {
         'analysis': 'ANALYSIS_AGENT_KEY',
-        'disposition': 'DISPOSITION_AGENT_KEY'
+        'disposition': 'ACTION_AGENT_KEY'
     }
 
     if agent_type not in key_map:

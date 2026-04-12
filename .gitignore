@@ -4,8 +4,10 @@
 .venv/
 .env
 CLAUDE.md
+TwinSentry_Project_Optimization_Roadmap.xlsx
 
 # --- Python 垃圾文件 ---
+app/__pycache__/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -33,3 +35,9 @@ MANIFEST
 # --- 操作系统临时文件 ---
 .DS_Store
 Thumbs.db
+app/__pycache__/__init__.cpython-312.pyc
+app/__pycache__/__init__.cpython-312.pyc
+app/routes/__pycache__/docs.cpython-312.pyc
+app/routes/__pycache__/main.cpython-312.pyc
+app/routes/__pycache__/settings.cpython-312.pyc
+app/services/__pycache__/utils.cpython-312.pyc

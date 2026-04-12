@@ -28,7 +28,7 @@ metadata:
 - `submit_result(alert_id, analysis_log)` - 提交分析结论
 - `run_once(analyze_func)` - 完整的过程
 
-### 2. 处置 Agent (Disposition Agent)
+### 2. 处置 Agent (action Agent)
 
 获取已分析的告警并执行处置动作。
 
@@ -42,12 +42,12 @@ metadata:
 
 ### 配置环境变量或修改脚本中的配置
 
-在 `references/analysis_agent_skill.py` 和 `references/disposition_agent_skill.py` 顶部修改配置：
+在 `references/analysis_agent_skill.py` 和 `references/action_agent_skill.py` 顶部修改配置：
 
 ```python
 TWINSENTRY_BASE_URL = "http://your-twinsentry-server:5000"  # TwinSentry 服务器地址
 ANALYSIS_AGENT_KEY = "your-api-key"  # 分析 Agent API Key
-DISPOSITION_AGENT_KEY = "your-api-key"  # 处置 Agent API Key
+action_AGENT_KEY = "your-api-key"  # 处置 Agent API Key
 ```
 
 ### 分析告警报表示例
@@ -80,9 +80,9 @@ if task:
 ```python
 import sys
 sys.path.insert(0, '/root/.openclaw/workspace-main/skills/twin-sentry/references')
-from disposition_agent_skill import TwinSentryDispositionSkill
+from action_agent_skill import TwinSentryactionSkill
 
-skill = TwinSentryDispositionSkill()
+skill = TwinSentryactionSkill()
 
 # 获取待处置告警
 task = skill.fetch_task()
@@ -104,7 +104,7 @@ if task:
 import sys
 sys.path.insert(0, '/root/.openclaw/workspace-main/skills/twin-sentry/references')
 from analysis_agent_skill import TwinSentryAnalysisSkill
-from disposition_agent_skill import TwinSentryDispositionSkill
+from action_agent_skill import TwinSentryactionSkill
 
 # 分析 Agent
 analysis_skill = TwinSentryAnalysisSkill()
@@ -126,7 +126,7 @@ def my_analyze(alert):
 analysis_skill.run_once(my_analyze)
 
 # 处置 Agent
-disposition_skill = TwinSentryDispositionSkill()
+action_skill = TwinSentryactionSkill()
 
 def my_dispose(alert):
     """处置函数 - 执行实际的安全操作"""
@@ -140,7 +140,7 @@ def my_dispose(alert):
     }
 
 # 处理一条告警
-disposition_skill.run_once(my_dispose)
+action_skill.run_once(my_dispose)
 ```
 
 ## 告警数据结构
@@ -174,16 +174,8 @@ disposition_skill.run_once(my_dispose)
 ```bash
 cd /root/.openclaw/workspace-main/skills/twin-sentry/references
 python3 analysis_agent_skill.py
-python3 disposition_agent_skill.py
+python3 action_agent_skill.py
 ```
-
-## 集成到 LangChain
-
-参考 `references/langchain_wrapper.py` 了解如何将 TwinSentry 技能包装为 LangChain BaseTool。
-
-## 集成到 Dify
-
-使用 `references/dify_tool.yaml` 导入到 Dify 或其他支持 OpenAPI 规范的框架。
 
 ## 相关文档
 

@@ -93,7 +93,8 @@
                 <input type="password" id="smtp-pass" class="form-input" placeholder="请输入 SMTP 授权码">
             </div>
         </div>
-        <div class="settings-flex-row" style="display: flex; justify-content: space-between; align-items: flex-end; gap: 1.5rem;">
+        <div class="settings-flex-row"
+            style="display: flex; justify-content: space-between; align-items: flex-end; gap: 1.5rem;">
             <div class="form-group" style="flex: 1; margin-bottom: 0;">
                 <label>默认发件人</label>
                 <input type="text" id="smtp-sender" class="form-input" placeholder="TwinSentry <noreply@example.com>">
@@ -128,8 +129,8 @@
                 </button>
             </div>
             <div class="form-group">
-                <label>处置智能体 (Disposition Agent Key)</label>
-                <input type="text" id="disposition-agent-key" class="form-input" placeholder="请输入 Disposition API Key">
+                <label>处置智能体 (Action Agent Key)</label>
+                <input type="text" id="action-agent-key" class="form-input" placeholder="请输入 Action API Key">
                 <button class="btn btn-outline key-reset-btn" type="button" onclick="resetAgentKey('disposition')">
                     <i class="fas fa-arrows-rotate" style="margin-right: 0.5rem;"></i> 重置处置 Key
                 </button>
@@ -166,7 +167,7 @@
 
             // Load Agent Keys
             if (systemRes.analysis_agent_key) document.getElementById('analysis-agent-key').value = systemRes.analysis_agent_key;
-            if (systemRes.disposition_agent_key) document.getElementById('disposition-agent-key').value = systemRes.disposition_agent_key;
+            if (systemRes.action_agent_key) document.getElementById('action-agent-key').value = systemRes.action_agent_key;
         }
 
         // Load Channel Settings
@@ -229,7 +230,7 @@
             deduplication_enabled: document.getElementById('deduplication_enabled').checked ? 'true' : 'false',
             deduplication_mode: document.getElementById('deduplication_mode').value,
             analysis_agent_key: document.getElementById('analysis-agent-key').value,
-            disposition_agent_key: document.getElementById('disposition-agent-key').value
+            action_agent_key: document.getElementById('action-agent-key').value
         };
         await apiRequest('/api/settings/system', 'PUT', systemData);
 
@@ -291,7 +292,7 @@
         if (agentType === 'analysis') {
             document.getElementById('analysis-agent-key').value = res.key_value;
         } else {
-            document.getElementById('disposition-agent-key').value = res.key_value;
+            document.getElementById('action-agent-key').value = res.key_value;
         }
 
         showFeedback(`${typeLabel} Agent Key 已重置`);

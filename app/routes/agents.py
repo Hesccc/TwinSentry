@@ -27,9 +27,13 @@ def analysis_fetch():
     if auth_error:
         return auth_error
     
+    alert_id = request.args.get('alert_id')
+    query = Alert.query.filter_by(status=AlertStatus.PENDING.value, is_delete=0)
+    if alert_id:
+        query = query.filter_by(id=alert_id)
+        
     # Get latest PENDING alert with priority support and row-level locking
-    alert = Alert.query.filter_by(status=AlertStatus.PENDING.value, is_delete=0) \
-        .order_by(Alert.priority.asc(), Alert.created_at.asc()) \
+    alert = query.order_by(Alert.priority.asc(), Alert.created_at.asc()) \
         .with_for_update(skip_locked=True) \
         .first()
     
@@ -91,9 +95,13 @@ def process_fetch():
     if auth_error:
         return auth_error
     
+    alert_id = request.args.get('alert_id')
+    query = Alert.query.filter_by(status=AlertStatus.ANALYZED.value, is_delete=0)
+    if alert_id:
+        query = query.filter_by(id=alert_id)
+        
     # Get latest ANALYZED alert with priority support and row-level locking
-    alert = Alert.query.filter_by(status=AlertStatus.ANALYZED.value, is_delete=0) \
-        .order_by(Alert.priority.asc(), Alert.created_at.asc()) \
+    alert = query.order_by(Alert.priority.asc(), Alert.created_at.asc()) \
         .with_for_update(skip_locked=True) \
         .first()
     
@@ -146,8 +154,8 @@ def process_submit():
 @agents.route('/config/key', methods=['GET'])
 def get_key():
     analysis_config = SystemConfig.query.filter_by(config_key='ANALYSIS_AGENT_KEY').first()
-    disposition_config = SystemConfig.query.filter_by(config_key='DISPOSITION_AGENT_KEY').first()
+    disposition_config = SystemConfig.query.filter_by(config_key='ACTION_AGENT_KEY').first()
     return api_response(data={
         'analysis_agent_key': analysis_config.config_value if analysis_config else "NOT_FOUND",
-        'disposition_agent_key': disposition_config.config_value if disposition_config else "NOT_FOUND"
+        'action_agent_key': disposition_config.config_value if disposition_config else "NOT_FOUND"
     })

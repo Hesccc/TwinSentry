@@ -1,8 +1,7 @@
 """
 TwinSentry — 处置 Agent 技能包 (Disposition Agent Skill)
 =========================================================
-适用于 AI Agent 框架（如 Dify、AutoGPT、LangChain 等）。
-本脚本封装了与 TwinSentry 处置 Agent 接口的完整交互逻辑：
+本 Python 脚本封装了与 TwinSentry 分析 Agent 接口的完整交互逻辑：
   1. 获取一条已分析、待处置的告警任务 (GET /agent/disposition/fetch)
   2. 提交处置动作记录 (POST /agent/disposition/submit)
 
@@ -14,22 +13,27 @@ import json
 import logging
 from typing import Optional
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # ===== 配置区 =====
-TWINSENTRY_BASE_URL   = "http://192.168.0.2:5000"     # TwinSentry 服务器地址
-DISPOSITION_AGENT_KEY = "05b3a520e16a86424fd3c9666cd11fad422ff7e98102f1b02090991aa15c8eda"  # 处置 Agent API Key
-REQUEST_TIMEOUT       = 30                            # 请求超时（秒）
+TWINSENTRY_BASE_URL   = os.environ.get("TWINSENTRY_BASE_URL", "http://192.168.0.2:5000")     # TwinSentry 服务器地址
+ACTION_AGENT_KEY      = os.environ.get("ACTION_AGENT_KEY", "your-action-agent-key-here")  # 处置 Agent API Key
+REQUEST_TIMEOUT       = int(os.environ.get("REQUEST_TIMEOUT", 30))                            # 请求超时（秒）
 # ==================
 
 logger = logging.getLogger(__name__)
 
 
-class TwinSentryDispositionSkill:
+class TwinSentryActionSkill:
     """
     TwinSentry 处置 Agent 技能类。
     负责从 TwinSentry 获取已分析告警，并将执行的处置动作提交回系统。
 
     典型工作流：
-        skill = TwinSentryDispositionSkill()
+        skill = TwinSentryActionSkill()
         task = skill.fetch_task()
         if task:
             action = your_agent.dispose(task)
@@ -42,7 +46,7 @@ class TwinSentryDispositionSkill:
     def __init__(
         self,
         base_url: str = TWINSENTRY_BASE_URL,
-        api_key: str  = DISPOSITION_AGENT_KEY,
+        api_key: str  = ACTION_AGENT_KEY,
         timeout: int  = REQUEST_TIMEOUT,
     ):
         self.base_url = base_url.rstrip("/")
@@ -57,10 +61,14 @@ class TwinSentryDispositionSkill:
     # 公开方法
     # ──────────────────────────────────────────────────────────────────────
 
-    def fetch_task(self) -> Optional[dict]:
+    def fetch_task(self, alert_id: Optional[int] = None) -> Optional[dict]:
         """
         从 TwinSentry 原子性获取一条已完成分析、待处置的告警。
         服务端使用 SELECT FOR UPDATE SKIP LOCKED，保证同一告警不会被多个 Agent 并发获取。
+
+        参数：
+            alert_id (int): 可选。如果传入，则只尝试获取该给定 ID 的告警。
+
 
         返回值：
             dict  — 告警信息，包含以下字段：
@@ -80,28 +88,29 @@ class TwinSentryDispositionSkill:
             ...     print(task["enrichment_data"])  # 读取富化数据
         """
         url = f"{self.base_url}/disposition/fetch"
+        params = {"alert_id": alert_id} if alert_id is not None else None
         try:
-            resp = requests.get(url, headers=self.headers, timeout=self.timeout)
+            resp = requests.get(url, params=params, headers=self.headers, timeout=self.timeout)
             data = resp.json()
             if resp.status_code == 200 and data.get("code") == 0:
                 alert = data["data"].get("alert")
                 if alert:
-                    logger.info(f"[DispositionSkill] 已获取告警 #{alert['id']}: {alert['title']}")
+                    logger.info(f"[ActionSkill] 已获取告警 #{alert['id']}: {alert['title']}")
                     return alert
                 else:
-                    logger.info("[DispositionSkill] 暂无待处置任务")
+                    logger.info("[ActionSkill] 暂无待处置任务")
                     return None
             elif resp.status_code == 404:
-                logger.info("[DispositionSkill] 暂无待处置任务（队列为空）")
+                logger.info("[ActionSkill] 暂无待处置任务（队列为空）")
                 return None
             else:
-                logger.warning(f"[DispositionSkill] fetch 失败: {resp.status_code} {data.get('msg')}")
+                logger.warning(f"[ActionSkill] fetch 失败: {resp.status_code} {data.get('msg')}")
                 return None
         except requests.exceptions.Timeout:
-            logger.error("[DispositionSkill] 请求超时，请检查服务器连接")
+            logger.error("[ActionSkill] 请求超时，请检查服务器连接")
             return None
         except Exception as e:
-            logger.error(f"[DispositionSkill] fetch 异常: {e}")
+            logger.error(f"[ActionSkill] fetch 异常: {e}")
             return None
 
     def submit_result(
@@ -141,25 +150,27 @@ class TwinSentryDispositionSkill:
             )
             data = resp.json()
             if resp.status_code == 200 and data.get("code") == 0:
-                logger.info(f"[DispositionSkill] 告警 #{alert_id} 处置记录已提交，状态 → disposed")
+                logger.info(f"[ActionSkill] 告警 #{alert_id} 处置记录已提交，状态 → disposed")
                 return True
             else:
-                logger.warning(f"[DispositionSkill] submit 失败: {resp.status_code} {data.get('msg')}")
+                logger.warning(f"[ActionSkill] submit 失败: {resp.status_code} {data.get('msg')}")
                 return False
         except requests.exceptions.Timeout:
-            logger.error("[DispositionSkill] 提交超时")
+            logger.error("[ActionSkill] 提交超时")
             return False
         except Exception as e:
-            logger.error(f"[DispositionSkill] submit 异常: {e}")
+            logger.error(f"[ActionSkill] submit 异常: {e}")
             return False
 
-    def run_once(self, dispose_func) -> bool:
+    def run_once(self, dispose_func, alert_id: Optional[int] = None) -> bool:
         """
         便捷方法：完成一次完整的"获取 → 处置 → 提交"流程。
 
         参数：
             dispose_func — 可调用对象，接收告警 dict，返回 dict:
                            { "action_log": str }
+            alert_id     — 可选，只处理特定 ID 的告警
+
 
         返回值：
             True  — 成功处理一条告警
@@ -178,14 +189,14 @@ class TwinSentryDispositionSkill:
             ...     }
             >>> skill.run_once(my_dispose)
         """
-        task = self.fetch_task()
+        task = self.fetch_task(alert_id=alert_id)
         if not task:
             return False
 
         try:
             result = dispose_func(task)
         except Exception as e:
-            logger.error(f"[DispositionSkill] 处置函数异常: {e}")
+            logger.error(f"[ActionSkill] 处置函数异常: {e}")
             return False
 
         return self.submit_result(
@@ -201,7 +212,7 @@ if __name__ == "__main__":
     import time
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-    skill = TwinSentryDispositionSkill()
+    skill = TwinSentryActionSkill()
 
     def demo_dispose(alert: dict) -> dict:
         """演示用处置函数 — 请替换为实际的处置逻辑（调用安全工具 API 等）"""

@@ -49,21 +49,25 @@
                 style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
                 <code id="analysis-key" style="color: var(--accent-blue); word-break: break-all;">Loading...</code>
                 <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-                    <button class="btn" style="width: auto; padding: 5px 10px;" onclick="copyKey('analysis-key')">复制</button>
-                    <button class="btn btn-outline" style="width: auto; padding: 5px 10px;" onclick="resetProfileKey('analysis')">重置</button>
+                    <button class="btn" style="width: auto; padding: 5px 10px;"
+                        onclick="copyKey('analysis-key')">复制</button>
+                    <button class="btn btn-outline" style="width: auto; padding: 5px 10px;"
+                        onclick="resetProfileKey('analysis')">重置</button>
                 </div>
             </div>
         </div>
 
         <div>
             <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">处置智能体
-                (Disposition Agent Key)</label>
+                (Action Agent Key)</label>
             <div
                 style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
-                <code id="disposition-key" style="color: var(--accent-blue); word-break: break-all;">Loading...</code>
+                <code id="action-key" style="color: var(--accent-blue); word-break: break-all;">Loading...</code>
                 <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-                    <button class="btn" style="width: auto; padding: 5px 10px;" onclick="copyKey('disposition-key')">复制</button>
-                    <button class="btn btn-outline" style="width: auto; padding: 5px 10px;" onclick="resetProfileKey('disposition')">重置</button>
+                    <button class="btn" style="width: auto; padding: 5px 10px;"
+                        onclick="copyKey('action-key')">复制</button>
+                    <button class="btn btn-outline" style="width: auto; padding: 5px 10px;"
+                        onclick="resetProfileKey('disposition')">重置</button>
                 </div>
             </div>
         </div>
@@ -88,7 +92,7 @@
         const res = await apiRequest('/config/key');
         if (res && res.data) {
             document.getElementById('analysis-key').textContent = res.data.analysis_agent_key;
-            document.getElementById('disposition-key').textContent = res.data.disposition_agent_key;
+            document.getElementById('action-key').textContent = res.data.action_agent_key;
         }
     }
 
@@ -150,7 +154,7 @@
         if (agentType === 'analysis') {
             document.getElementById('analysis-key').textContent = res.key_value;
         } else {
-            document.getElementById('disposition-key').textContent = res.key_value;
+            document.getElementById('action-key').textContent = res.key_value;
         }
 
         showFeedback(`${typeLabel} Agent Key 已重置`);

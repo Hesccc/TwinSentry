@@ -43,7 +43,21 @@ def docs_page():
 @main.route('/skills-page')
 @token_required_page
 def skills_page():
-    return render_template('skills.html')
+    from flask import current_app
+    import os
+    
+    skills_root = os.path.abspath(os.path.join(current_app.root_path, '..', 'skills'))
+    available_skills = []
+    
+    if os.path.exists(skills_root):
+        for item in os.listdir(skills_root):
+            if os.path.isdir(os.path.join(skills_root, item)):
+                available_skills.append({
+                    'name': item,
+                    'description': f"Agent Skill Package for {item}"
+                })
+                
+    return render_template('skills.html', available_skills=available_skills)
 
 @main.route('/api/alerts', methods=['GET'])
 @token_required
