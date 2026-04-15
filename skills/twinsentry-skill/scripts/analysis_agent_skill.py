@@ -69,7 +69,7 @@ class TwinSentryAnalysisSkill:
 
         参数：
             alert_id (int): 可选。如果传入，则只尝试获取该给定 ID 的告警。
-        
+
 
         返回值：
             dict  — 告警信息，包含以下字段：
@@ -102,13 +102,13 @@ class TwinSentryAnalysisSkill:
                 logger.info("[AnalysisSkill] 暂无待分析任务（队列为空）")
                 return None
             else:
-                logger.warning(f"[AnalysisSkill] fetch 失败: {resp.status_code} {data.get('msg')}")
+                logger.warning(f"[AnalysisSkill] fetch 失败：{resp.status_code} {data.get('msg')}")
                 return None
         except requests.exceptions.Timeout:
             logger.error("[AnalysisSkill] 请求超时，请检查服务器连接")
             return None
         except Exception as e:
-            logger.error(f"[AnalysisSkill] fetch 异常: {e}")
+            logger.error(f"[AnalysisSkill] fetch 异常：{e}")
             return None
 
     def submit_result(
@@ -157,13 +157,13 @@ class TwinSentryAnalysisSkill:
                 logger.info(f"[AnalysisSkill] 告警 #{alert_id} 分析结论已提交")
                 return True
             else:
-                logger.warning(f"[AnalysisSkill] submit 失败: {resp.status_code} {data.get('msg')}")
+                logger.warning(f"[AnalysisSkill] submit 失败：{resp.status_code} {data.get('msg')}")
                 return False
         except requests.exceptions.Timeout:
             logger.error("[AnalysisSkill] 提交超时")
             return False
         except Exception as e:
-            logger.error(f"[AnalysisSkill] submit 异常: {e}")
+            logger.error(f"[AnalysisSkill] submit 异常：{e}")
             return False
 
     def run_once(self, analyze_func, alert_id: Optional[int] = None) -> bool:
@@ -196,7 +196,7 @@ class TwinSentryAnalysisSkill:
         try:
             result = analyze_func(task)
         except Exception as e:
-            logger.error(f"[AnalysisSkill] 分析函数异常: {e}")
+            logger.error(f"[AnalysisSkill] 分析函数异常：{e}")
             return False
 
         return self.submit_result(
@@ -210,7 +210,149 @@ class TwinSentryAnalysisSkill:
 # 单文件运行示例（直接执行此脚本时触发）
 # ──────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    import argparse
     import time
+
+    # 存储子命令参数信息的类
+    class SubcommandHelp:
+        def __init__(self):
+            self.subcommands = {}
+
+        def add_subcommand(self, name, help_text, args):
+            self.subcommands[name] = {"help": help_text, "args": args}
+
+    subcommand_help = SubcommandHelp()
+
+    # 自定义格式化类，用于显示子命令参数
+    class CustomHelpFormatter(argparse.RawDescriptionHelpFormatter):
+        def _format_action(self, action):
+            if isinstance(action, argparse._SubParsersAction):
+                # 自定义子命令显示格式
+                parts = []
+                parts.append("\n可用命令:\n")
+                parts.append("  <command>\n")
+
+                for name, parser in action.choices.items():
+                    if name == "run_once":
+                        continue  # 跳过隐藏的 run_once
+
+                    # 获取子命令的帮助文本
+                    help_text = parser.description.split('\n')[0] if parser.description else ""
+                    # 简化描述，只取第一句
+                    if "。" in help_text:
+                        help_text = help_text.split("。")[0] + "。"
+
+                    parts.append(f"    {name:<13} {help_text}\n")
+
+                    # 显示该子命令的参数
+                    sub_args = subcommand_help.subcommands.get(name, {}).get("args", [])
+                    for arg_info in sub_args:
+                        parts.append(f"      {arg_info['name']:<11} {arg_info['help']}\n")
+
+                    parts.append("\n")
+
+                # 添加使用示例和更多信息
+                parts.append("""    使用示例:
+      # 1. 获取一条待分析的安全告警
+      uv run analysis_agent_skill.py fetch_task
+      # 2. 获取指定 ID 的告警
+      uv run analysis_agent_skill.py fetch_task --alert_id 12345
+      # 3. 提交告警分析结论
+      uv run analysis_agent_skill.py submit_result --alert_id 12345 --data "分析结论内容"
+
+    更多信息:
+      使用 uv run analysis_agent_skill.py <command> -h 查看子命令的详细帮助
+""")
+                return "".join(parts)
+            return super()._format_action(action)
+
+    # 详细的脚本描述
+    DESCRIPTION = """TwinSentry 分析 Agent 命令行工具
+
+本工具用于与 TwinSentry 安全事件分析平台进行交互，提供以下功能：
+  - 获取待分析的安全告警任务
+  - 提交告警分析结论与 Splunk 富化数据
+"""
+
+    parser = argparse.ArgumentParser(
+        description=DESCRIPTION,
+        formatter_class=CustomHelpFormatter
+    )
+    parser.add_argument("-v", "--version", action="version", version="TwinSentry Analysis Agent Skill v1.0")
+
+    subparsers = parser.add_subparsers(dest="command", metavar="<command>")
+
+    # fetch_task 子命令
+    fetch_args = [{"name": "--alert_id", "help": "指定告警 ID，获取指定 ID 的告警"}]
+    fetch_parser = subparsers.add_parser(
+        "fetch_task",
+        help="从 TwinSentry 获取一条待分析的安全告警",
+        description="原子性获取一条待分析的安全告警任务。\n服务端使用 SELECT FOR UPDATE SKIP LOCKED，保证同一告警不会被多个 Agent 并发获取。",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    fetch_parser.add_argument(
+        "--alert_id",
+        type=int,
+        metavar="ID",
+        help="指定告警 ID，获取指定 ID 的告警"
+    )
+    subcommand_help.add_subcommand("fetch_task", "从 TwinSentry 获取一条待分析的安全告警", fetch_args)
+
+    # submit_result 子命令
+    submit_args = [
+        {"name": "--alert_id", "help": "指定告警 ID"},
+        {"name": "--data", "help": "提交指定的告警 ID 的分析结论"},
+        {"name": "--enrichment", "help": "可选，Splunk 富化数据 (JSON 格式)"}
+    ]
+    submit_parser = subparsers.add_parser(
+        "submit_result",
+        help="向 TwinSentry 提交告警分析结论",
+        description="提交分析结论与 Splunk 富化数据到 TwinSentry。\n成功后告警状态将流转为 'analyzed'，进入处置 Agent 处理队列。",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    submit_parser.add_argument(
+        "--alert_id",
+        type=int,
+        required=True,
+        metavar="ID",
+        help="指定告警 ID"
+    )
+    submit_parser.add_argument(
+        "--data",
+        type=str,
+        required=True,
+        metavar="CONTENT",
+        help="提交指定的告警 ID 的分析结论"
+    )
+    submit_parser.add_argument(
+        "--enrichment",
+        type=str,
+        default=None,
+        metavar="JSON",
+        help="可选，Splunk 富化数据 (JSON 格式)"
+    )
+    subcommand_help.add_subcommand("submit_result", "向 TwinSentry 提交告警分析结论", submit_args)
+
+    # run_once 子命令
+    run_parser = subparsers.add_parser(
+        "run_once",
+        help=argparse.SUPPRESS,
+        description="便捷方法：完成一次完整的流程。\n使用内置的 demo_analyze 函数模拟分析逻辑，仅用于演示。",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    run_parser.add_argument(
+        "--alert_id",
+        type=int,
+        metavar="ID",
+        help="可选，只处理特定 ID 的告警"
+    )
+    run_parser.add_argument(
+        "--loop",
+        action="store_true",
+        help="持续轮询模式，每 5 秒检查一次新任务"
+    )
+
+    args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     skill = TwinSentryAnalysisSkill()
@@ -233,12 +375,48 @@ if __name__ == "__main__":
             "enrichment_data": {"analyzed_by": "demo_agent", "lines_count": len(text_lines)},
         }
 
-    print("=== TwinSentry 分析 Agent Skill Demo ===")
-    print(f"服务地址: {TWINSENTRY_BASE_URL}")
-    print("开始轮询任务（Ctrl+C 停止）...\n")
-
-    while True:
-        handled = skill.run_once(demo_analyze)
-        if not handled:
-            print("暂无任务，5 秒后重试...")
-        time.sleep(5)
+    if args.command == "fetch_task":
+        task = skill.fetch_task(alert_id=args.alert_id)
+        if task:
+            print(json.dumps(task, indent=2, ensure_ascii=False))
+        else:
+            print("未能获取到任务。")
+    elif args.command == "submit_result":
+        enrichment_data = None
+        if args.enrichment:
+            try:
+                enrichment_data = json.loads(args.enrichment)
+            except json.JSONDecodeError as e:
+                print(f"JSON 格式错误：{e}")
+                exit(1)
+        success = skill.submit_result(
+            alert_id=args.alert_id,
+            analysis_log=args.data,
+            enrichment_data=enrichment_data
+        )
+        if success:
+            print(f"告警 {args.alert_id} 分析结论提交成功。")
+        else:
+            print(f"告警 {args.alert_id} 分析结论提交失败。")
+    elif args.command == "run_once":
+        if args.loop:
+            # 持续轮询模式
+            print("=== TwinSentry 分析 Agent Skill Demo (轮询模式) ===")
+            print(f"服务地址：{TWINSENTRY_BASE_URL}")
+            print("开始轮询任务（Ctrl+C 停止）...\n")
+            while True:
+                handled = skill.run_once(demo_analyze)
+                if not handled:
+                    print("暂无任务，5 秒后重试...")
+                time.sleep(5)
+        else:
+            # 单次执行模式
+            print("=== TwinSentry 分析 Agent Skill Demo ===")
+            print(f"服务地址：{TWINSENTRY_BASE_URL}")
+            handled = skill.run_once(demo_analyze, alert_id=args.alert_id)
+            if handled:
+                print("单次任务执行完成。")
+            else:
+                print("无待处理任务或执行失败。")
+    else:
+        parser.print_help()
