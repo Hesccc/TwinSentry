@@ -50,7 +50,12 @@
             </li>
             <li class="nav-item">
                 <a href="/settings" class="nav-link {{ 'active' if request.path == '/settings' }}" id="nav-settings">
-                    <i class="fas fa-bell"></i> 系统设置
+                    <i class="fas fa-bell"></i> 通知设置
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/agent" class="nav-link {{ 'active' if request.path == '/agent' }}" id="nav-agent-settings">
+                    <i class="fas fa-robot"></i> Agent 设置
                 </a>
             </li>
             <li class="nav-item">
@@ -121,10 +126,9 @@
 
     <div id="modal-container" class="modal-overlay">
         <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div class="modal-header">
                 <h3 id="modal-title">Modal Title</h3>
-                <button id="close-modal"
-                    style="background: none; border: none; color: var(--text-main); cursor: pointer; font-size: 1.5rem;">&times;</button>
+                <button id="close-modal" class="modal-close-btn" aria-label="关闭">&times;</button>
             </div>
             <div id="modal-body"></div>
         </div>

@@ -101,6 +101,16 @@ def create_app(config_name='default'):
                 db.session.add(SystemConfig(config_key='DEDUPLICATION_ENABLED', config_value='false'))
             if not SystemConfig.query.filter_by(config_key='DEDUPLICATION_MODE').first():
                 db.session.add(SystemConfig(config_key='DEDUPLICATION_MODE', config_value='title'))
+
+            # OpenClaw Integration Defaults
+            if not SystemConfig.query.filter_by(config_key='OPENCLAW_BASE_URL').first():
+                db.session.add(SystemConfig(config_key='OPENCLAW_BASE_URL', config_value=''))
+            if not SystemConfig.query.filter_by(config_key='OPENCLAW_WEBHOOK_TOKEN').first():
+                db.session.add(SystemConfig(config_key='OPENCLAW_WEBHOOK_TOKEN', config_value=''))
+            if not SystemConfig.query.filter_by(config_key='OPENCLAW_ANALYSIS_PATH').first():
+                db.session.add(SystemConfig(config_key='OPENCLAW_ANALYSIS_PATH', config_value='/hooks/eleanor'))
+            if not SystemConfig.query.filter_by(config_key='OPENCLAW_ACTION_PATH').first():
+                db.session.add(SystemConfig(config_key='OPENCLAW_ACTION_PATH', config_value='/hooks/aria'))
             
             # Mock Alert Data
             from .models import Alert, AlertStatus

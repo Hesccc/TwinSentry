@@ -160,7 +160,7 @@
                 <div style="width: 8px; height: 8px; border-radius: 50%; background: ${getStatusColor(a.status)};"></div>
                 <div style="flex: 1;">
                     <div style="font-size: 0.85rem; font-weight: 500;">${a.title}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">${a.status}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${a.status_label}</div>
                 </div>
                 <div style="font-size: 0.75rem; color: var(--text-muted);">${new Date(a.time).toLocaleTimeString()}</div>
             </div>
@@ -168,14 +168,22 @@
     }
 
     function getStatusColor(status) {
-        const colors = {
+        // Accept both numeric status (1-5) and Chinese labels
+        const numColors = {
+            1: '#fbbf24',  // 待分析
+            2: '#60a5fa',  // 分析中
+            3: '#a78bfa',  // 已分析
+            4: '#f472b6',  // 处置中
+            5: '#34d399'   // 已处置
+        };
+        const strColors = {
             '待分析': '#fbbf24',
             '分析中': '#60a5fa',
             '已分析': '#a78bfa',
             '处置中': '#f472b6',
             '已处置': '#34d399'
         };
-        return colors[status] || '#94a3b8';
+        return numColors[status] || strColors[status] || '#94a3b8';
     }
 
     function renderCombinedChart(id, datasetsInfo) {

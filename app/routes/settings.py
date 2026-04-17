@@ -156,7 +156,7 @@ def system_settings(current_user):
     # Keys we want to handle
     target_keys = [
         'NOTIFY_TIMEOUT_MINUTES',
-        'MAIL_SERVER', 'MAIL_PORT', 'MAIL_USERNAME', 
+        'MAIL_SERVER', 'MAIL_PORT', 'MAIL_USERNAME',
         'MAIL_PASSWORD', 'MAIL_ENCRYPTION', 'MAIL_DEFAULT_SENDER',
         'DEDUPLICATION_ENABLED', 'DEDUPLICATION_MODE',
         'ANALYSIS_AGENT_KEY', 'ACTION_AGENT_KEY'
@@ -202,7 +202,7 @@ def reset_agent_key(current_user):
 
     key_map = {
         'analysis': 'ANALYSIS_AGENT_KEY',
-        'disposition': 'ACTION_AGENT_KEY'
+        'action': 'ACTION_AGENT_KEY'
     }
 
     if agent_type not in key_map:
@@ -227,3 +227,41 @@ def reset_agent_key(current_user):
         'key_type': agent_type,
         'key_value': new_key
     })
+
+
+@settings.route('/openclaw', methods=['GET', 'PUT'])
+@token_required
+def openclaw_settings(current_user):
+    """OpenClaw 系统集成配置"""
+    target_keys = [
+        'OPENCLAW_BASE_URL',
+        'OPENCLAW_WEBHOOK_TOKEN',
+        'OPENCLAW_ANALYSIS_PATH',
+        'OPENCLAW_ACTION_PATH'
+    ]
+
+    if request.method == 'GET':
+        results = {}
+        for key in target_keys:
+            config = SystemConfig.query.filter_by(config_key=key).first()
+            if config:
+                results[key.lower()] = config.config_value
+            else:
+                results[key.lower()] = ""
+        return jsonify(results)
+
+    data = request.get_json() or {}
+    for key in target_keys:
+        json_key = key.lower()
+        if json_key in data:
+            val = str(data[json_key]) if data[json_key] else ""
+            config = SystemConfig.query.filter_by(config_key=key).first()
+            if not config:
+                config = SystemConfig(config_key=key, config_value=val)
+                db.session.add(config)
+            else:
+                config.config_value = val
+
+    db.session.commit()
+    log_audit('修改 OpenClaw 集成配置', '成功', user_id=current_user.id, details="更新了 OpenClaw 系统集成参数")
+    return jsonify({'message': 'OpenClaw settings updated'})

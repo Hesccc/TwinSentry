@@ -45,9 +45,9 @@ metadata:
 在 `references/analysis_agent_skill.py` 和 `references/action_agent_skill.py` 顶部修改配置：
 
 ```python
-TWINSENTRY_BASE_URL = "http://your-twinsentry-server:5000"  # TwinSentry 服务器地址
-ANALYSIS_AGENT_KEY = "your-api-key"  # 分析 Agent API Key
-action_AGENT_KEY = "your-api-key"  # 处置 Agent API Key
+TWINSENTRY_BASE_URL = "http://192.168.0.2:5000"  # TwinSentry 服务器地址
+ANALYSIS_AGENT_KEY = "c871b11d74876c6bbdd19bdc37ae80bc"  # 分析 Agent API Key
+action_AGENT_KEY = "c871b11d74876c6bbdd19bdc37ae80bc"  # 处置 Agent API Key
 ```
 
 ### 分析告警报表示例

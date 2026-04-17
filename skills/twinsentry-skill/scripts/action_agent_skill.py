@@ -260,16 +260,16 @@ if __name__ == "__main__":
                 # 添加使用示例和更多信息
                 parts.append("""    使用示例:
       # 1. 获取一条待处置的安全告警
-      uv run action_agent_skill.py fetch_task
+      python3 action_agent_skill.py fetch_task
       # 2. 获取指定 ID 的告警
-      uv run action_agent_skill.py fetch_task --alert_id 12345
+      python3 action_agent_skill.py fetch_task --alert_id 12345
       # 3. 提交告警处置结果
-      uv run action_agent_skill.py submit_result --alert_id 12345 --data "已封禁 IP 1.2.3.4"
+      python3 action_agent_skill.py submit_result --alert_id 12345 --data "已封禁 IP 1.2.3.4"
       # 4. 提交处置结果并附加富化数据
-      uv run action_agent_skill.py submit_result --alert_id 12345 --data "已封禁 IP" --enrichment '{"waf_rule": "R-001"}'
+      python3 action_agent_skill.py submit_result --alert_id 12345 --data "已封禁 IP" --enrichment '{"waf_rule": "R-001"}'
 
     更多信息:
-      使用 uv run action_agent_skill.py <command> -h 查看子命令的详细帮助
+      使用 python3 action_agent_skill.py <command> -h 查看子命令的详细帮助
 """)
                 return "".join(parts)
             return super()._format_action(action)

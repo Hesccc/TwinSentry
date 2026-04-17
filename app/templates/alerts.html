@@ -24,7 +24,7 @@
         <thead>
             <tr>
                 <th>序号</th>
-                <th>ID</th>
+                <th>告警 ID</th>
                 <th>标题</th>
                 <th>状态</th>
                 <th>采集时间</th>
@@ -57,7 +57,8 @@
             tbody.innerHTML = '';
 
             const alertList = Array.isArray(alerts) ? alerts : [];
-            const filteredAlerts = selectedStatus ? alertList.filter(a => a.status === selectedStatus) : alertList;
+            // Filter by status_label (Chinese text) for display purposes
+            const filteredAlerts = selectedStatus ? alertList.filter(a => a.status_label === selectedStatus) : alertList;
 
             if (!filteredAlerts.length) {
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1rem;">当前筛选条件下暂无告警</td></tr>`;
@@ -71,24 +72,33 @@
                     if (e.target.tagName !== 'BUTTON') showDetails(a);
                 };
 
-                const canRollback = a.status === '分析中' || a.status === '处置中';
+                // Check numeric status values
+                const canRollback = a.status === 2 || a.status === 4; // 分析中 or 处置中
                 const rollbackButton = canRollback
-                    ? `<button class="btn" style="background: #f59e0b; padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px; margin-right: 6px;" onclick="rollbackAlert(${a.id}, '${a.status}')">回退重试</button>`
+                    ? `<button class="btn" style="background: #f59e0b; padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px; margin-right: 6px;" onclick="rollbackAlert('${a.alert_id}', '${a.status}')">回退重试</button>`
                     : '';
+
+                // 外发按钮：根据状态显示 (numeric status values)
+                const forwardButton = a.status === 1 // 待分析
+                    ? `<button class="btn" style="background: var(--primary-color); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 80px; margin-right: 6px;" onclick="forwardToOpenClaw('${a.alert_id}', 'analysis')">外发至分析智能体</button>`
+                    : (a.status === 3 // 已分析
+                    ? `<button class="btn" style="background: var(--primary-color); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 80px; margin-right: 6px;" onclick="forwardToOpenClaw('${a.alert_id}', 'action')">外发至处置智能体</button>`
+                    : '');
 
                 const createdAt = new Date(a.created_at).toLocaleString();
                 const updatedAt = new Date(a.updated_at).toLocaleString();
 
                 row.innerHTML = `
                 <td>${index + 1}</td>
-                <td style="font-weight: 500;">${a.id}</td>
+                <td style="font-weight: 500; font-family: monospace;">${a.alert_id}</td>
                 <td>${a.title}</td>
-                <td><span class="status-badge badge-${getStatusKey(a.status)}">${a.status}</span></td>
+                <td><span class="status-badge badge-${getStatusKey(a.status_label)}">${a.status_label}</span></td>
                 <td>${createdAt}</td>
                 <td>${updatedAt}</td>
                 <td>
+                    ${forwardButton}
                     ${rollbackButton}
-                    <button class="btn" style="background: var(--danger); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px;" onclick="deleteAlert(${a.id})">删除</button>
+                    <button class="btn" style="background: var(--danger); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px;" onclick="deleteAlert('${a.alert_id}')">删除</button>
                 </td>
             `;
                 tbody.appendChild(row);
@@ -102,14 +112,22 @@
     }
 
     function getStatusKey(status) {
-        const map = {
+        // Accept both numeric status (1-5) and Chinese labels
+        const numMap = {
+            1: 'pending',
+            2: 'analyzing',
+            3: 'analyzed',
+            4: 'processing',
+            5: 'processed'
+        };
+        const strMap = {
             '待分析': 'pending',
             '分析中': 'analyzing',
             '已分析': 'analyzed',
             '处置中': 'processing',
             '已处置': 'processed'
         };
-        return map[status] || 'pending';
+        return numMap[status] || strMap[status] || 'pending';
     }
 
     function formatCnDateTime(dateStr) {
@@ -128,9 +146,9 @@
     async function showDetails(a) {
         const contentHtml = `
         <div style="display: grid; gap: 1rem; overflow-x: hidden; word-break: break-word; overflow-wrap: break-word;">
-            <div><strong>告警ID:</strong> ${a.id}</div>
+            <div><strong>告警 ID:</strong> <span style="font-family: monospace;">${a.alert_id}</span></div>
             <div><strong>标题:</strong> ${a.title}</div>
-            <div><strong>当前状态:</strong> <span class="status-badge badge-${getStatusKey(a.status)}">${a.status}</span></div>
+            <div><strong>当前状态:</strong> <span class="status-badge badge-${getStatusKey(a.status_label)}">${a.status_label}</span></div>
             <div><strong>采集时间:</strong> ${new Date(a.created_at).toLocaleString()}</div>
             <div><strong>修改时间:</strong> ${new Date(a.updated_at).toLocaleString()}</div>
 
@@ -140,7 +158,7 @@
                 <h3 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 600;">原始数据</h3>
                 <pre style="background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-all; overflow-wrap: break-word; overflow-x: hidden; max-width: 100%; font-family: monospace; font-size: 12px;">${a.raw_text}</pre>
             </div>
-            
+
             <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
 
             <div>
@@ -157,7 +175,7 @@
             <div>
                 <h3 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 600; display: flex; align-items: baseline; gap: 12px;">
                     分析智能体<告警根因>
-                    <span style="font-size: 0.8rem; font-weight: normal;">分析时间: ${formatCnDateTime(a.analysis_time)}</span>
+                    <span style="font-size: 0.8rem; font-weight: normal;">分析时间：${formatCnDateTime(a.analysis_time)}</span>
                 </h3>
                 <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--bg-dark); overflow: hidden; font-size: 12px;">
                     <div class="markdown-body" style="word-break: break-word; overflow-wrap: break-word; font-size: 12px;">${a.analysis_result ? marked.parse(a.analysis_result) : '暂无'}</div>
@@ -169,7 +187,7 @@
             <div>
                 <h3 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 600; display: flex; align-items: baseline; gap: 12px;">
                     处置智能体<处置结论>
-                    <span style="font-size: 0.8rem; font-weight: normal;">处置时间: ${formatCnDateTime(a.process_time)}</span>
+                    <span style="font-size: 0.8rem; font-weight: normal;">处置时间：${formatCnDateTime(a.process_time)}</span>
                 </h3>
                 <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--bg-dark); overflow: hidden; font-size: 12px;">
                     <div class="markdown-body" style="word-break: break-word; overflow-wrap: break-word; font-size: 12px;">${a.process_result ? marked.parse(a.process_result) : '暂无'}</div>
@@ -180,7 +198,7 @@
         modal.show('告警详情', contentHtml);
     }
 
-    async function rollbackAlert(id, currentStatus) {
+    async function rollbackAlert(alertId, currentStatus) {
         const targetStatus = currentStatus === '分析中'
             ? '待分析'
             : (currentStatus === '处置中' ? '已分析' : null);
@@ -193,7 +211,7 @@
         const ok = confirm(`确认回退告警状态吗？\n${currentStatus} -> ${targetStatus}\n（回退用于重试，已有关联结果内容将保留）`);
         if (!ok) return;
 
-        const res = await apiRequest(`/api/alerts/${id}/rollback`, 'POST');
+        const res = await apiRequest(`/api/alerts/${alertId}/rollback`, 'POST');
         if (res && res.data) {
             showFeedback('状态回退成功');
             loadData();
@@ -202,13 +220,34 @@
         }
     }
 
-    async function deleteAlert(id) {
+    async function deleteAlert(alertId) {
         if (confirm('确认是否删除此告警数据？')) {
-            const res = await apiRequest(`/api/alerts/${id}`, 'DELETE');
+            const res = await apiRequest(`/api/alerts/${alertId}`, 'DELETE');
             if (res.message) {
                 showFeedback('删除成功');
                 loadData();
             }
+        }
+    }
+
+    async function forwardToOpenClaw(alertId, target) {
+        const targetLabel = target === 'analysis' ? '分析智能体' : '处置智能体';
+        const confirmed = confirm(`确认将此告警外发至 ${targetLabel} 吗？\n\n外发后告警状态将更新为"${target === 'analysis' ? '分析中' : '处置中'}"`);
+        if (!confirmed) return;
+
+        const res = await apiRequest('/api/webhook/forward-to-openclaw', 'POST', {
+            alert_id: alertId,
+            target: target
+        });
+
+        if (res.message && res.message === '外发成功') {
+            const responseText = res.data && res.data.openclaw_response
+                ? `\nOpenClaw 响应：${JSON.stringify(res.data.openclaw_response)}`
+                : '';
+            showFeedback(`外发成功，已推送至${targetLabel}${responseText}`);
+            loadData();
+        } else {
+            showFeedback((res && res.message) ? res.message : '外发失败', 'error');
         }
     }
 

@@ -30,7 +30,7 @@ def analysis_fetch():
     alert_id = request.args.get('alert_id')
     query = Alert.query.filter_by(status=AlertStatus.PENDING.value, is_delete=0)
     if alert_id:
-        query = query.filter_by(id=alert_id)
+        query = query.filter_by(alert_id=alert_id)
         
     # Get latest PENDING alert with priority support and row-level locking
     alert = query.order_by(Alert.priority.asc(), Alert.created_at.asc()) \
@@ -44,11 +44,12 @@ def analysis_fetch():
     alert.status = AlertStatus.ANALYZING.value
     db.session.commit()
     
-    log_audit('智能体拉取分析任务', '成功', details=f"告警 ID: {alert.id}, 标题: {alert.title}")
+    log_audit('智能体拉取分析任务', '成功', details=f"告警 ID: {alert.alert_id}, 标题: {alert.title}")
     
     return api_response(data={
         'alert': {
-            'id': alert.id,
+            'id': alert.alert_id,
+            'alert_id': alert.alert_id,
             'title': alert.title,
             'content': alert.content,
             'raw_text': alert.raw_text,
@@ -71,7 +72,7 @@ def analysis_submit():
     if not alert_id or not analysis_log:
         return api_response(code=400, msg='ID and analysis_log required'), 400
     
-    alert = Alert.query.filter_by(id=alert_id, is_delete=0).first()
+    alert = Alert.query.filter_by(alert_id=alert_id, is_delete=0).first()
     if not alert:
         return api_response(code=404, msg='Alert not found'), 404
     
@@ -85,7 +86,7 @@ def analysis_submit():
     alert.status = AlertStatus.ANALYZED.value
     db.session.commit()
     
-    log_audit('智能体提交分析结论', '成功', details=f"告警 ID: {alert.id}, 结论内容: {analysis_log[:200]}...")
+    log_audit('智能体提交分析结论', '成功', details=f"告警 ID: {alert.alert_id}, 结论内容: {analysis_log[:200]}...")
     return api_response(msg='Analysis result submitted')
 
 @agents.route('/process/fetch', methods=['GET'])
@@ -98,7 +99,7 @@ def process_fetch():
     alert_id = request.args.get('alert_id')
     query = Alert.query.filter_by(status=AlertStatus.ANALYZED.value, is_delete=0)
     if alert_id:
-        query = query.filter_by(id=alert_id)
+        query = query.filter_by(alert_id=alert_id)
         
     # Get latest ANALYZED alert with priority support and row-level locking
     alert = query.order_by(Alert.priority.asc(), Alert.created_at.asc()) \
@@ -112,11 +113,12 @@ def process_fetch():
     alert.status = AlertStatus.PROCESSING.value
     db.session.commit()
     
-    log_audit('智能体拉取处置任务', '成功', details=f"告警 ID: {alert.id}, 标题: {alert.title}")
+    log_audit('智能体拉取处置任务', '成功', details=f"告警 ID: {alert.alert_id}, 标题: {alert.title}")
     
     return api_response(data={
         'alert': {
-            'id': alert.id,
+            'id': alert.alert_id,
+            'alert_id': alert.alert_id,
             'title': alert.title,
             'content': alert.content,
             'raw_text': alert.raw_text,
@@ -139,7 +141,7 @@ def process_submit():
     if not alert_id or not action_log:
         return api_response(code=400, msg='ID and result required'), 400
     
-    alert = Alert.query.filter_by(id=alert_id, is_delete=0).first()
+    alert = Alert.query.filter_by(alert_id=alert_id, is_delete=0).first()
     if not alert:
         return api_response(code=404, msg='Alert not found'), 404
     
@@ -148,7 +150,7 @@ def process_submit():
     alert.status = AlertStatus.PROCESSED.value
     db.session.commit()
     
-    log_audit('智能体提交处置结论', '成功', details=f"告警 ID: {alert.id}, 处置内容: {action_log[:200]}...")
+    log_audit('智能体提交处置结论', '成功', details=f"告警 ID: {alert.alert_id}, 处置内容: {action_log[:200]}...")
     return api_response(msg='Process result submitted')
 
 @agents.route('/config/key', methods=['GET'])

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block page_title %}系统设置{% endblock %}
+{% block page_title %}通知设置{% endblock %}
 
 {% block content %}
 <div class="settings-container">
@@ -32,7 +32,7 @@
                 <h3 style="margin: 0;">高级告警去重配置</h3>
             </div>
             <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
-                防止因相同告警短时间内重复涌入导致的“告警风暴”。
+                防止因相同告警短时间内重复涌入导致的"告警风暴"。
             </p>
             <div class="settings-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="settings-item">
@@ -47,7 +47,7 @@
                     <select id="deduplication_mode" class="form-input"
                         style="background-color: var(--bg-card); color: white;">
                         <option value="title">仅告警标题</option>
-                        <option value="all">标题+内容</option>
+                        <option value="all">标题 + 内容</option>
                     </select>
                 </div>
             </div>
@@ -111,34 +111,6 @@
     </div>
 
 
-    <!-- Agent API Key Configuration -->
-    <div class="card" style="margin-bottom: 2rem; margin-top: 2rem;">
-        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-            <i class="fas fa-key" style="font-size: 1.5rem; color: var(--primary-color);"></i>
-            <h3 style="margin: 0;">Agent 认证 Key 配置</h3>
-        </div>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
-            手动配置或更新 Analysis 和 Disposition Agent 的身份认证 Key。
-        </p>
-        <div class="settings-two-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <div class="form-group">
-                <label>分析智能体 (Analysis Agent Key)</label>
-                <input type="text" id="analysis-agent-key" class="form-input" placeholder="请输入 Analysis API Key">
-                <button class="btn btn-outline key-reset-btn" type="button" onclick="resetAgentKey('analysis')">
-                    <i class="fas fa-arrows-rotate" style="margin-right: 0.5rem;"></i> 重置分析 Key
-                </button>
-            </div>
-            <div class="form-group">
-                <label>处置智能体 (Action Agent Key)</label>
-                <input type="text" id="action-agent-key" class="form-input" placeholder="请输入 Action API Key">
-                <button class="btn btn-outline key-reset-btn" type="button" onclick="resetAgentKey('disposition')">
-                    <i class="fas fa-arrows-rotate" style="margin-right: 0.5rem;"></i> 重置处置 Key
-                </button>
-            </div>
-        </div>
-    </div>
-
-
     <div class="settings-actions" style="margin-top: 2rem; display: flex; justify-content: flex-end;">
         <button class="btn" onclick="saveAllSettings()">
             <i class="fas fa-save" style="margin-right: 0.5rem;"></i> 保存所有配置
@@ -152,7 +124,6 @@
     let currentConfigs = [];
 
     async function loadSettings() {
-        // Load System Settings
         const systemRes = await apiRequest('/api/settings/system');
         if (systemRes) {
             if (systemRes.notify_timeout_minutes) document.getElementById('timeout-mins').value = systemRes.notify_timeout_minutes;
@@ -164,13 +135,8 @@
             if (systemRes.mail_encryption) document.getElementById('smtp-encryption').value = systemRes.mail_encryption;
             if (systemRes.deduplication_enabled !== undefined) document.getElementById('deduplication_enabled').checked = systemRes.deduplication_enabled === 'true';
             if (systemRes.deduplication_mode) document.getElementById('deduplication_mode').value = systemRes.deduplication_mode;
-
-            // Load Agent Keys
-            if (systemRes.analysis_agent_key) document.getElementById('analysis-agent-key').value = systemRes.analysis_agent_key;
-            if (systemRes.action_agent_key) document.getElementById('action-agent-key').value = systemRes.action_agent_key;
         }
 
-        // Load Channel Settings
         currentConfigs = await apiRequest('/api/settings/notifications');
         const grid = document.getElementById('settings-grid');
         grid.innerHTML = '';
@@ -203,12 +169,12 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-                
+
                 <div class="form-group">
                     <label>${info.label}</label>
                     <input type="text" class="form-input" placeholder="${info.placeholder}" value="${c.config_value || ''}" id="val-${c.id}">
                 </div>
-                
+
                 <button class="btn btn-outline" style="margin-top: 1rem; width: 100%; border: 1px solid rgba(255,255,255,0.1); background: transparent;" onclick="testNotification('${c.channel}', ${c.id})">
                     <i class="fas fa-vial" style="margin-right: 0.5rem;"></i> 测试连接
                 </button>
@@ -218,7 +184,6 @@
     }
 
     async function saveAllSettings() {
-        // 1. Save System Settings
         const systemData = {
             notify_timeout_minutes: document.getElementById('timeout-mins').value,
             mail_server: document.getElementById('smtp-server').value,
@@ -228,13 +193,10 @@
             mail_encryption: document.getElementById('smtp-encryption').value,
             mail_default_sender: document.getElementById('smtp-sender').value,
             deduplication_enabled: document.getElementById('deduplication_enabled').checked ? 'true' : 'false',
-            deduplication_mode: document.getElementById('deduplication_mode').value,
-            analysis_agent_key: document.getElementById('analysis-agent-key').value,
-            action_agent_key: document.getElementById('action-agent-key').value
+            deduplication_mode: document.getElementById('deduplication_mode').value
         };
         await apiRequest('/api/settings/system', 'PUT', systemData);
 
-        // 2. Save Channel Settings
         const channelData = currentConfigs.map(c => ({
             id: c.id,
             is_enabled: document.getElementById(`check-${c.id}`).checked,
@@ -278,26 +240,6 @@
         }
     }
 
-    async function resetAgentKey(agentType) {
-        const typeLabel = agentType === 'analysis' ? '分析' : '处置';
-        const confirmed = confirm(`确认重置${typeLabel} Agent Key吗？\n重置后旧 Key 将立即失效。`);
-        if (!confirmed) return;
-
-        const res = await apiRequest('/api/settings/system/reset-agent-key', 'POST', { agent_type: agentType });
-        if (!res || !res.key_value) {
-            showFeedback((res && res.message) ? res.message : `重置${typeLabel} Key失败`, 'error');
-            return;
-        }
-
-        if (agentType === 'analysis') {
-            document.getElementById('analysis-agent-key').value = res.key_value;
-        } else {
-            document.getElementById('action-agent-key').value = res.key_value;
-        }
-
-        showFeedback(`${typeLabel} Agent Key 已重置`);
-    }
-
     document.addEventListener('DOMContentLoaded', loadSettings);
 </script>
 
@@ -336,14 +278,7 @@
         border-color: white !important;
     }
 
-    .key-reset-btn {
-        margin-top: 0.75rem;
-        width: 100%;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: transparent;
-    }
-
-    /* Toggle Switch Styles (restored and polished) */
+    /* Toggle Switch Styles */
     .switch {
         position: relative;
         display: inline-block;

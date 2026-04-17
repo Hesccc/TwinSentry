@@ -216,3 +216,88 @@ document.addEventListener('DOMContentLoaded', () => {
         initMobileNav();
     }
 });
+
+// Agent Settings Page Functions
+async function loadAgentSettings() {
+    const systemRes = await apiRequest('/api/settings/system');
+    if (systemRes) {
+        if (systemRes.analysis_agent_key) document.getElementById('analysis-agent-key').value = systemRes.analysis_agent_key;
+        if (systemRes.action_agent_key) document.getElementById('action-agent-key').value = systemRes.action_agent_key;
+    }
+
+    // Load OpenClaw settings
+    const openclawRes = await apiRequest('/api/settings/openclaw');
+    if (openclawRes) {
+        if (openclawRes.openclaw_base_url) document.getElementById('openclaw-base-url').value = openclawRes.openclaw_base_url;
+        if (openclawRes.openclaw_webhook_token) document.getElementById('openclaw-webhook-token').value = openclawRes.openclaw_webhook_token;
+        if (openclawRes.openclaw_analysis_path) document.getElementById('openclaw-analysis-path').value = openclawRes.openclaw_analysis_path;
+        if (openclawRes.openclaw_action_path) document.getElementById('openclaw-action-path').value = openclawRes.openclaw_action_path;
+    }
+}
+
+async function saveAgentSettings() {
+    const systemData = {
+        analysis_agent_key: document.getElementById('analysis-agent-key').value,
+        action_agent_key: document.getElementById('action-agent-key').value
+    };
+    const res = await apiRequest('/api/settings/system', 'PUT', systemData);
+    if (res.message) {
+        showFeedback('Agent 配置已保存');
+    }
+
+    // Save OpenClaw settings
+    const openclawData = {
+        openclaw_base_url: document.getElementById('openclaw-base-url').value,
+        openclaw_webhook_token: document.getElementById('openclaw-webhook-token').value,
+        openclaw_analysis_path: document.getElementById('openclaw-analysis-path').value,
+        openclaw_action_path: document.getElementById('openclaw-action-path').value
+    };
+    const openclawRes = await apiRequest('/api/settings/openclaw', 'PUT', openclawData);
+    if (openclawRes.message) {
+        showFeedback('OpenClaw 配置已保存');
+    }
+}
+
+async function saveAgentKey(agentType) {
+    const typeLabel = agentType === 'analysis' ? '分析' : '处置';
+    const inputId = agentType === 'analysis' ? 'analysis-agent-key' : 'action-agent-key';
+    const keyValue = document.getElementById(inputId).value;
+
+    if (!keyValue || keyValue.trim() === '') {
+        showFeedback(`请输入${typeLabel} Agent Key`, 'error');
+        return;
+    }
+
+    const systemData = {
+        [`${agentType}_agent_key`]: keyValue
+    };
+    const res = await apiRequest('/api/settings/system', 'PUT', systemData);
+    if (res.message) {
+        showFeedback(`${typeLabel} Agent Key 已保存`);
+    }
+}
+
+async function resetAgentKey(agentType) {
+    const typeLabel = agentType === 'analysis' ? '分析' : '处置';
+    const confirmed = confirm(`确认重置${typeLabel} Agent Key 吗？\n重置后旧 Key 将立即失效。`);
+    if (!confirmed) return;
+
+    const res = await apiRequest('/api/settings/system/reset-agent-key', 'POST', { agent_type: agentType });
+    if (!res || !res.key_value) {
+        showFeedback((res && res.message) ? res.message : `重置${typeLabel} Key 失败`, 'error');
+        return;
+    }
+
+    if (agentType === 'analysis') {
+        document.getElementById('analysis-agent-key').value = res.key_value;
+    } else if (agentType === 'action') {
+        document.getElementById('action-agent-key').value = res.key_value;
+    }
+
+    showFeedback(`${typeLabel} Agent Key 已重置`);
+}
+
+// Load agent settings on page load
+if (window.location.pathname === '/agent') {
+    document.addEventListener('DOMContentLoaded', loadAgentSettings);
+}
