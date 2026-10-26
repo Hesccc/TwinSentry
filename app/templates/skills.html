@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block page_title %}TwinSentry Skills Hub{% endblock %}
+
+{% block content %}
+<div class="skills-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0;">可用子系统技能包 (Available Skills)</h3>
+        <div class="view-toggle"
+            style="display: flex; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.25rem; border-radius: 6px;">
+            <button class="btn btn-outline" id="btn-grid-view" onclick="switchView('grid')"
+                style="padding: 0.4rem 0.8rem; border: none; background: var(--primary-color); transition: all 0.2s;">
+                <i class="fas fa-th-large"></i> 网格
+            </button>
+            <button class="btn btn-outline" id="btn-list-view" onclick="switchView('list')"
+                style="padding: 0.4rem 0.8rem; border: none; transition: all 0.2s;">
+                <i class="fas fa-list"></i> 列表
+            </button>
+        </div>
+    </div>
+
+    <div id="skills-display" class="skills-grid">
+        {% for skill in available_skills %}
+        <div class="skill-item card">
+            <div class="skill-icon">
+                <i class="fas fa-box-open" style="font-size: 1.2rem;"></i>
+            </div>
+            <div class="skill-details">
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--text-main);">{{ skill.name }}</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+                    自动识别到的系统本地环境技能包拓展。内置标准化配置文件与 Agent 组件规范。如需部署至外部大模型，请直接下载并解压。
+                </p>
+            </div>
+            <div class="skill-action">
+                <button class="btn btn-outline" style="width: 100%; white-space: nowrap;"
+                    onclick="downloadSkill('{{ skill.name }}')">
+                    <i class="fas fa-download"></i> 下载配置包
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if not available_skills %}
+        <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">
+            暂无解析到的技能包目录，请在后端 skills/ 目录下植入配置文件。
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    /* Grid view */
+    .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .skills-grid .skill-item {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .skills-grid .skill-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .skills-grid .skill-details {
+        flex-grow: 1;
+        margin-bottom: 1.5rem;
+    }
+
+    /* List view */
+    .skills-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .skills-list .skill-item {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .skills-list .skill-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .skills-list .skill-details {
+        flex-grow: 1;
+    }
+
+    .skills-list .skill-details p {
+        margin-top: 0.5rem !important;
+        max-width: 80%;
+    }
+
+    .skills-list .skill-action {
+        flex-shrink: 0;
+        min-width: 150px;
+    }
+
+    @media (max-width: 768px) {
+        .skills-list .skill-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .skills-list .skill-details p {
+            max-width: 100%;
+        }
+
+        .skills-list .skill-action {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function switchView(mode) {
+        const container = document.getElementById('skills-display');
+        const btnGrid = document.getElementById('btn-grid-view');
+        const btnList = document.getElementById('btn-list-view');
+
+        if (mode === 'grid') {
+            container.className = 'skills-grid';
+            btnGrid.style.background = 'var(--primary-color)';
+            btnList.style.background = 'transparent';
+        } else {
+            container.className = 'skills-list';
+            btnList.style.background = 'var(--primary-color)';
+            btnGrid.style.background = 'transparent';
+        }
+    }
+
+    function downloadSkill(skillName) {
+        if (!skillName) {
+            showFeedback('错误：未指定技能包名称');
+            return;
+        }
+        window.location.href = `/api/skills/download/${skillName}`;
+    }
+</script>
+{% endblock %}

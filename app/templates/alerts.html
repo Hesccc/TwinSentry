@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block page_title %}告警管理{% endblock %}
+
+{% block content %}
+<div class="card table-container">
+    <div class="alerts-toolbar"
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 0.75rem;">
+        <div class="alerts-toolbar-controls" style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="status-filter" style="color: var(--text-muted); font-size: 0.9rem;">状态筛选</label>
+            <select id="status-filter" class="form-input" style="width: auto; min-width: 140px;" onchange="loadData()">
+                <option value="">全部状态</option>
+                <option value="待分析">待分析</option>
+                <option value="分析中">分析中</option>
+                <option value="已分析">已分析</option>
+                <option value="处置中">处置中</option>
+                <option value="已处置">已处置</option>
+            </select>
+            <button id="refresh-btn" class="btn" style="width: auto;" onclick="loadData(true)">刷新数据</button>
+            <span id="refresh-status" style="color: var(--text-muted); font-size: 0.8rem;">未刷新</span>
+        </div>
+    </div>
+    <table id="alert-table">
+        <thead>
+            <tr>
+                <th>序号</th>
+                <th>告警 ID</th>
+                <th>标题</th>
+                <th>状态</th>
+                <th>采集时间</th>
+                <th>修改时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="alert-tbody">
+            <!-- Data will be loaded here -->
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadData(isManual = false) {
+        const tbody = document.getElementById('alert-tbody');
+        const selectedStatus = document.getElementById('status-filter')?.value || '';
+        const refreshBtn = document.getElementById('refresh-btn');
+        const refreshStatus = document.getElementById('refresh-status');
+
+        if (isManual) {
+            if (refreshBtn) refreshBtn.disabled = true;
+            if (refreshStatus) refreshStatus.textContent = '刷新中...';
+        }
+
+        try {
+            const alerts = await apiRequest('/api/alerts');
+            tbody.innerHTML = '';
+
+            const alertList = Array.isArray(alerts) ? alerts : [];
+            // Filter by status_label (Chinese text) for display purposes
+            const filteredAlerts = selectedStatus ? alertList.filter(a => a.status_label === selectedStatus) : alertList;
+
+            if (!filteredAlerts.length) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1rem;">当前筛选条件下暂无告警</td></tr>`;
+                return;
+            }
+
+            filteredAlerts.forEach((a, index) => {
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') showDetails(a);
+                };
+
+                // Check numeric status values
+                const canRollback = a.status === 2 || a.status === 4; // 分析中 or 处置中
+                const rollbackButton = canRollback
+                    ? `<button class="btn" style="background: #f59e0b; padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px; margin-right: 6px;" onclick="rollbackAlert('${a.alert_id}', '${a.status}')">回退重试</button>`
+                    : '';
+
+                // 外发按钮：根据状态显示 (numeric status values)
+                const forwardButton = a.status === 1 // 待分析
+                    ? `<button class="btn" style="background: var(--primary-color); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 80px; margin-right: 6px;" onclick="forwardToOpenClaw('${a.alert_id}', 'analysis')">外发至分析智能体</button>`
+                    : (a.status === 3 // 已分析
+                    ? `<button class="btn" style="background: var(--primary-color); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 80px; margin-right: 6px;" onclick="forwardToOpenClaw('${a.alert_id}', 'action')">外发至处置智能体</button>`
+                    : '');
+
+                const createdAt = new Date(a.created_at).toLocaleString();
+                const updatedAt = new Date(a.updated_at).toLocaleString();
+
+                row.innerHTML = `
+                <td>${index + 1}</td>
+                <td style="font-weight: 500; font-family: monospace;">${a.alert_id}</td>
+                <td>${a.title}</td>
+                <td><span class="status-badge badge-${getStatusKey(a.status_label)}">${a.status_label}</span></td>
+                <td>${createdAt}</td>
+                <td>${updatedAt}</td>
+                <td>
+                    ${forwardButton}
+                    ${rollbackButton}
+                    <button class="btn" style="background: var(--danger); padding: 4px 8px; font-size: 0.75rem; width: auto; min-width: 64px;" onclick="deleteAlert('${a.alert_id}')">删除</button>
+                </td>
+            `;
+                tbody.appendChild(row);
+            });
+        } finally {
+            if (isManual) {
+                if (refreshBtn) refreshBtn.disabled = false;
+                if (refreshStatus) refreshStatus.textContent = `上次刷新：${new Date().toLocaleTimeString()}`;
+            }
+        }
+    }
+
+    function getStatusKey(status) {
+        // Accept both numeric status (1-5) and Chinese labels
+        const numMap = {
+            1: 'pending',
+            2: 'analyzing',
+            3: 'analyzed',
+            4: 'processing',
+            5: 'processed'
+        };
+        const strMap = {
+            '待分析': 'pending',
+            '分析中': 'analyzing',
+            '已分析': 'analyzed',
+            '处置中': 'processing',
+            '已处置': 'processed'
+        };
+        return numMap[status] || strMap[status] || 'pending';
+    }
+
+    function formatCnDateTime(dateStr) {
+        if (!dateStr) return '暂无';
+        const d = new Date(dateStr);
+        if (Number.isNaN(d.getTime())) return '暂无';
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const h = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        const s = String(d.getSeconds()).padStart(2, '0');
+        return `${y}年${m}月${day}日 ${h}:${min}:${s}`;
+    }
+
+    async function showDetails(a) {
+        const contentHtml = `
+        <div style="display: grid; gap: 1rem; overflow-x: hidden; word-break: break-word; overflow-wrap: break-word;">
+            <div><strong>告警 ID:</strong> <span style="font-family: monospace;">${a.alert_id}</span></div>
+            <div><strong>标题:</strong> ${a.title}</div>
+            <div><strong>当前状态:</strong> <span class="status-badge badge-${getStatusKey(a.status_label)}">${a.status_label}</span></div>
+            <div><strong>采集时间:</strong> ${new Date(a.created_at).toLocaleString()}</div>
+            <div><strong>修改时间:</strong> ${new Date(a.updated_at).toLocaleString()}</div>
+
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+            <div>
+                <h3 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 600;">原始数据</h3>
+                <pre style="background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-all; overflow-wrap: break-word; overflow-x: hidden; max-width: 100%; font-family: monospace; font-size: 12px;">${a.raw_text}</pre>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+            <div>
+                <h3 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 600;">解析数据</h3>
+                <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--bg-dark); overflow: hidden; font-size: 12px;">
+                    <ul style="margin: 0 0 0 20px; word-break: break-word; overflow-wrap: break-word;">
+                        ${a.content.map(i => `<li style="margin-bottom: 4px; overflow-wrap: break-word; word-break: break-word;">${i}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+            <div>
+                <h3 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 600; display: flex; align-items: baseline; gap: 12px;">
+                    分析智能体<告警根因>
+                    <span style="font-size: 0.8rem; font-weight: normal;">分析时间：${formatCnDateTime(a.analysis_time)}</span>
+                </h3>
+                <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--bg-dark); overflow: hidden; font-size: 12px;">
+                    <div class="markdown-body" style="word-break: break-word; overflow-wrap: break-word; font-size: 12px;">${a.analysis_result ? marked.parse(a.analysis_result) : '暂无'}</div>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+            <div>
+                <h3 style="font-size: 1rem; margin: 0 0 0.5rem 0; font-weight: 600; display: flex; align-items: baseline; gap: 12px;">
+                    处置智能体<处置结论>
+                    <span style="font-size: 0.8rem; font-weight: normal;">处置时间：${formatCnDateTime(a.process_time)}</span>
+                </h3>
+                <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--bg-dark); overflow: hidden; font-size: 12px;">
+                    <div class="markdown-body" style="word-break: break-word; overflow-wrap: break-word; font-size: 12px;">${a.process_result ? marked.parse(a.process_result) : '暂无'}</div>
+                </div>
+            </div>
+        </div>
+    `;
+        modal.show('告警详情', contentHtml);
+    }
+
+    async function rollbackAlert(alertId, currentStatus) {
+        const targetStatus = currentStatus === '分析中'
+            ? '待分析'
+            : (currentStatus === '处置中' ? '已分析' : null);
+
+        if (!targetStatus) {
+            showFeedback('当前状态不支持回退', 'error');
+            return;
+        }
+
+        const ok = confirm(`确认回退告警状态吗？\n${currentStatus} -> ${targetStatus}\n（回退用于重试，已有关联结果内容将保留）`);
+        if (!ok) return;
+
+        const res = await apiRequest(`/api/alerts/${alertId}/rollback`, 'POST');
+        if (res && res.data) {
+            showFeedback('状态回退成功');
+            loadData();
+        } else {
+            showFeedback((res && res.message) ? res.message : '状态回退失败', 'error');
+        }
+    }
+
+    async function deleteAlert(alertId) {
+        if (confirm('确认是否删除此告警数据？')) {
+            const res = await apiRequest(`/api/alerts/${alertId}`, 'DELETE');
+            if (res.message) {
+                showFeedback('删除成功');
+                loadData();
+            }
+        }
+    }
+
+    async function forwardToOpenClaw(alertId, target) {
+        const targetLabel = target === 'analysis' ? '分析智能体' : '处置智能体';
+        const confirmed = confirm(`确认将此告警外发至 ${targetLabel} 吗？\n\n外发后告警状态将更新为"${target === 'analysis' ? '分析中' : '处置中'}"`);
+        if (!confirmed) return;
+
+        const res = await apiRequest('/api/webhook/forward-to-openclaw', 'POST', {
+            alert_id: alertId,
+            target: target
+        });
+
+        if (res.message && res.message === '外发成功') {
+            const responseText = res.data && res.data.openclaw_response
+                ? `\nOpenClaw 响应：${JSON.stringify(res.data.openclaw_response)}`
+                : '';
+            showFeedback(`外发成功，已推送至${targetLabel}${responseText}`);
+            loadData();
+        } else {
+            showFeedback((res && res.message) ? res.message : '外发失败', 'error');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadData);
+    // Polling for refresh
+    setInterval(loadData, 30000);
+</script>
+
+<style>
+    .markdown-body {
+        line-height: 1.6;
+        color: var(--text-main);
+    }
+
+    .markdown-body p,
+    .markdown-body ul,
+    .markdown-body ol {
+        margin: 0.5em 0;
+    }
+
+    .markdown-body ul {
+        list-style-type: disc;
+        margin-left: 20px;
+    }
+
+    .markdown-body ol {
+        list-style-type: decimal;
+        margin-left: 20px;
+    }
+
+    .markdown-body pre {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 10px;
+        border-radius: 6px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+    }
+
+    .markdown-body code {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 0.9em;
+    }
+
+    @media (max-width: 900px) {
+        .alerts-toolbar {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .alerts-toolbar-controls {
+            flex-wrap: wrap;
+        }
+
+        .alerts-toolbar-controls #status-filter {
+            min-width: 120px;
+            flex: 1;
+        }
+
+        .alerts-toolbar-controls #refresh-btn {
+            width: auto;
+        }
+    }
+</style>
+{% endblock %}

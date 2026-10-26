@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block page_title %}Agent 设置{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- Agent API Key Configuration -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <i class="fas fa-key" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+            <h3 style="margin: 0;">TwinSentry API 接口认证 Key 配置</h3>
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">手动配置或更新 Analysis 与 Action Agent 的认证密钥，通过 API Key 获取相关的安全告警数据。</p>
+        <div class="settings-two-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+                <label>分析 Agent API Key</label>
+                <input type="text" id="analysis-agent-key" class="form-input" placeholder="请输入 Analysis API Key">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <button class="btn agent-reset-btn" type="button" onclick="saveAgentKey('analysis')">
+                        <i class="fas fa-save" style="margin-right: 0.5rem;"></i> 保存分析 Key
+                    </button>
+                    <button class="btn agent-reset-btn" type="button" onclick="resetAgentKey('analysis')">
+                        <i class="fas fa-arrows-rotate" style="margin-right: 0.5rem;"></i> 重置分析 Key
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>处置 Agent API Key</label>
+                <input type="text" id="action-agent-key" class="form-input" placeholder="请输入 Action API Key">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <button class="btn agent-reset-btn" type="button" onclick="saveAgentKey('action')">
+                        <i class="fas fa-save" style="margin-right: 0.5rem;"></i> 保存处置 Key
+                    </button>
+                    <button class="btn agent-reset-btn" type="button" onclick="resetAgentKey('action')">
+                        <i class="fas fa-arrows-rotate" style="margin-right: 0.5rem;"></i> 重置处置 Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OpenClaw Integration Configuration -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <i class="fas fa-link" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+            <h3 style="margin: 0;">OpenClaw 系统集成配置</h3>
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+            配置与外部 OpenClaw 系统的集成参数，实现告警数据主动推送至 OpenClaw 对应的 Agent WebHook，实现安全事件主动处置。
+        </p>
+        <div class="settings-two-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+                <label>OpenClaw Base URL</label>
+                <input type="url" id="openclaw-base-url" class="form-input" placeholder="例如：https://192.168.0.248:8443">
+            </div>
+            <div class="form-group">
+                <label>Webhook 认证 Token</label>
+                <input type="text" id="openclaw-webhook-token" class="form-input" placeholder="请输入 Webhook Token">
+            </div>
+        </div>
+        <div class="settings-two-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+            <div class="form-group">
+                <label>分析智能体 Webhook Path</label>
+                <input type="text" id="openclaw-analysis-path" class="form-input" placeholder="例如：/hook/eleanor">
+            </div>
+            <div class="form-group">
+                <label>处置智能体 Webhook Path</label>
+                <input type="text" id="openclaw-action-path" class="form-input" placeholder="例如：/hook/aria">
+            </div>
+        </div>
+        <div class="settings-actions" style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+            <button class="btn" onclick="saveAgentSettings()">
+                <i class="fas fa-save" style="margin-right: 0.5rem;"></i> OpenClaw 系统集成配置
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
