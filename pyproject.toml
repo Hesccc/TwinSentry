@@ -1,0 +1,27 @@
+[project]
+name = "twinsentry"
+version = "1.0.0"
+description = "TwinSentry - Multi-Agent SecOps SOAR Platform"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0.2",
+    "flask-sqlalchemy>=3.1.1",
+    "flask-migrate>=4.0.7",
+    "psycopg2-binary>=2.9.9",
+    "psycopg[binary]>=3.1.18",
+    "pyjwt>=2.8.0",
+    "flask-bcrypt>=1.0.1",
+    "flask-apscheduler>=1.13.1",
+    "python-dotenv>=1.0.1",
+    "flask-cors>=4.0.0",
+    "gunicorn>=21.2.0",
+    "pillow>=10.2.0",
+    "requests>=2.31.0",
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "mcp>=1.0.0",
+    "tiktoken>=0.7.0",
+]
+

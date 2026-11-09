@@ -126,3 +126,5 @@ def log_audit(action, status, user_id=None, ip_address=None, details=None):
     except Exception as e:
         print(f"Error logging audit: {e}")
         db.session.rollback()
+
+

@@ -25,5 +25,13 @@ services:
     volumes:
       - .:/app
 
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+
 volumes:
   postgres_data:
+

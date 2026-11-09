@@ -52,6 +52,9 @@ def create_app(config_name='default'):
     from .routes.skills import skills as skills_blueprint
     app.register_blueprint(skills_blueprint)
 
+    from .routes.workflow import workflow_bp
+    app.register_blueprint(workflow_bp)
+
     # Add scheduler jobs
     from .services.notifications import check_timeouts
     if not scheduler.get_job('timeout_check'):
@@ -146,3 +149,5 @@ def create_app(config_name='default'):
     setup_initial_data(app)
 
     return app
+
+
